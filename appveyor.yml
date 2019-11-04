@@ -1,0 +1,37 @@
+branches:
+  only:
+    - master
+    - /^v\d+\.\d+\.\d+$/
+
+skip_tags: false
+
+environment:
+  matrix:
+    - PYTHON_DIR: "C:\\Python36-x64"
+      VENV_DIR: "venv"
+
+install:
+  - "SET PATH=%PYTHON_DIR%;%PYTHON_DIR%\\Scripts;%PATH%"
+  - python -m pip install -U pip
+  - python -m pip install -U virtualenv
+
+build_script:
+  - "python -m virtualenv --clear %VENV_DIR%"
+  - "%VENV_DIR%\\scripts\\activate.bat"
+  - python -m pip install -r requirements/base.txt
+  - python -m fbs freeze
+  - "%VENV_DIR%\\scripts\\deactivate.bat"
+
+artifacts:
+  - path: target\sweep_qc_tool
+
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: E2fDx1ITgpKdokwdQy+CXDy4Bn/aMRfvLKeGRhXMLo6oO/x/tC7cQgm4nFclGZEC
+    artifact: target\sweep_qc_tool.zip
+    draft: false
+    prerelease: false
+    on:
+      APPVEYOR_REPO_TAG: true
+
