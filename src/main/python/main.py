@@ -131,6 +131,9 @@ class SweepTable(QAbstractTableModel):
             [13, 14, 15, 16]
         ]
 
+        for item in self._data:
+            item[3] = tmp_mpl_svg(item[3])
+
 
     def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
         """ Returns the number of rows under the given parent. When the parent 
@@ -174,11 +177,6 @@ class SweepTable(QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
             return self.colnames[section]
 
-        
-        
-        
-
-
 class SvgDelegate(QStyledItemDelegate):
 
     def paint(
@@ -191,7 +189,7 @@ class SvgDelegate(QStyledItemDelegate):
         value = index.data()
 
         renderer = QSvgRenderer()
-        renderer.load(tmp_mpl_svg(value))
+        renderer.load(value)
 
         bounds = QRectF(
             float(opt.rect.x()), 
@@ -248,7 +246,6 @@ class CentralWidget(QWidget):
         sweep_page.setModel(sweep_table)
         sweep_page.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         sweep_page.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
 
         layout = QGridLayout()
         self.setLayout(layout)
