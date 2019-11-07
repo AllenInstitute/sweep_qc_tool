@@ -10,11 +10,12 @@ from typing import Union, Optional, Dict
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QFileDialog, QWidget, QTextEdit,
-    QTabWidget, QGridLayout, QTableView
+    QTabWidget, QGridLayout, QTableView, QStyledItemDelegate, QHeaderView
 )
-from PyQt5.QtSvg import QSvgWidget
+from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
 from PyQt5.QtCore import (
-    QAbstractTableModel, QAbstractItemModel, QModelIndex, QVariant, QByteArray
+    QAbstractTableModel, QAbstractItemModel, QModelIndex, QByteArray,
+    QRectF
 )
 from PyQt5 import QtCore
 
@@ -33,7 +34,9 @@ AnyPath = Union[Path, str]
 
 
 def get_default_ontology() -> StimulusOntology:
-    with open(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE, "r") as default_ont_file:
+    with open(
+        StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE, "r"
+    ) as default_ont_file:
         ont_data = json.load(default_ont_file)
     return StimulusOntology(ont_data)
 
@@ -149,19 +152,13 @@ class SweepTable(QAbstractTableModel):
         self,
         index: QModelIndex, 
         role: int = QtCore.Qt.DisplayRole
-    ) -> QVariant:
+    ):
         """ Returns the data stored under the given role for the item referred 
         to by the index.
         """
         if role == QtCore.Qt.DisplayRole:
             value = self._data[index.row()][index.column()]
-
-            if index.column() == 3:
-                data = tmp_mpl_svg(value)
-                value = QSvgWidget()
-                value.load(data)
-
-            return QVariant(value)
+            return value
 
 
     def headerData(
@@ -169,22 +166,50 @@ class SweepTable(QAbstractTableModel):
         section: int, 
         orientation: int = QtCore.Qt.Horizontal, 
         role: int = QtCore.Qt.DisplayRole
-    ) -> Union[int, float, str]:
+    ):
         """Returns the data for the given role and section in the header with 
         the specified orientation.
         """
-        if role != QtCore.Qt.DisplayRole:
-            return QVariant()
 
-        if orientation == QtCore.Qt.Horizontal:
-            return QVariant(self.colnames[section])
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            return self.colnames[section]
+
         
-        return QVariant()
+        
+        
 
 
+class SvgDelegate(QStyledItemDelegate):
+
+    def paint(
+        self,
+        painter,
+        opt,
+        index
+    ):
+
+        value = index.data()
+
+        renderer = QSvgRenderer()
+        renderer.load(tmp_mpl_svg(value))
+
+        bounds = QRectF(
+            float(opt.rect.x()), 
+            float(opt.rect.y()), 
+            float(opt.rect.width()), 
+            float(opt.rect.height())
+        )
+
+        renderer.render(painter, bounds)
+        
 
 class SweepView(QTableView):
-    pass
+    
+    def __init__(self):
+        super(SweepView, self).__init__()
+
+        svg_delegate = SvgDelegate()
+        self.setItemDelegateForColumn(3, svg_delegate)
 
 
 class SweepPage(QWidget):
@@ -221,6 +246,9 @@ class CentralWidget(QWidget):
 
         sweep_table = SweepTable()
         sweep_page.setModel(sweep_table)
+        sweep_page.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        sweep_page.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
 
         layout = QGridLayout()
         self.setLayout(layout)
