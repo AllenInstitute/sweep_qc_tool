@@ -3,6 +3,7 @@
 
 import sys
 import json
+import io
 from pathlib import Path
 from typing import Union, Optional, Dict
 
@@ -11,11 +12,14 @@ from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QFileDialog, QWidget, QTextEdit,
     QTabWidget, QGridLayout, QTableView
 )
+from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtCore import (
-    QAbstractTableModel, QAbstractItemModel, QModelIndex, QVariant
+    QAbstractTableModel, QAbstractItemModel, QModelIndex, QVariant, QByteArray
 )
 from PyQt5 import QtCore
-# from PyQt5.QtCore.Qt import QDisplayRole, QHorizontal
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 from ipfx.stimulus import StimulusOntology
 from ipfx.ephys_data_set import EphysDataSet
@@ -150,7 +154,14 @@ class SweepTable(QAbstractTableModel):
         to by the index.
         """
         if role == QtCore.Qt.DisplayRole:
-            return QVariant(self._data[index.row()][index.column()])
+            value = self._data[index.row()][index.column()]
+
+            if index.column() == 3:
+                data = tmp_mpl_svg(value)
+                value = QSvgWidget()
+                value.load(data)
+
+            return QVariant(value)
 
 
     def headerData(
@@ -184,14 +195,32 @@ class CellPage(QWidget):
     pass
 
 
+def tmp_mpl_svg(ct=1):
+    ex = np.linspace(0, ct * np.pi, 100000)
+    why = np.cos(ex)
+
+    fig, ax = plt.subplots()
+    
+    ax.plot(ex, why)
+
+    data = io.BytesIO()
+    plt.savefig(data, format="svg")
+    plt.close()
+    return QByteArray(data.getvalue())
+
+
 class CentralWidget(QWidget):
 
     def init_ui(self):
 
-        cell_page = QTextEdit()
+        # cell_page = QTextEdit()
+        cell_page = QSvgWidget()
+        cell_page.load(tmp_mpl_svg())
+
         sweep_page = SweepView()  # QTextEdit()
 
-        sweep_page.setModel(SweepTable())
+        sweep_table = SweepTable()
+        sweep_page.setModel(sweep_table)
 
         layout = QGridLayout()
         self.setLayout(layout)
