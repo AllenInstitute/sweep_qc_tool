@@ -1,4 +1,7 @@
 """ Main executable for sweep qc tool
+
+This is a sandbox branch. If it's been merged to master something is wrong
+
 """
 
 import sys
@@ -10,9 +13,11 @@ from typing import Union, Optional, Dict
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QFileDialog, QWidget, QTextEdit,
-    QTabWidget, QGridLayout, QTableView, QStyledItemDelegate, QHeaderView
+    QTabWidget, QGridLayout, QTableView, QStyledItemDelegate, QHeaderView,
+    QStyleOptionViewItem, QCheckBox, QStyleOptionButton, QApplication, QStyle
 )
 from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
+from PyQt5.QtGui import QStandardItemModel, QPainter
 from PyQt5.QtCore import (
     QAbstractTableModel, QAbstractItemModel, QModelIndex, QByteArray,
     QRectF
@@ -56,7 +61,7 @@ class ExperimentData(QAbstractItemModel):
         """
 
         # TODO this ought to be modeled (and settable?)
-        self.stimulus_ontology: StimulusOntology = get_default_ontology()
+        self.stimulus_ontology: Optional[StimulusOntology] = get_default_ontology()
         self.qc_criteria: Optional[Dict] = None
         self.cell_qc_manual_values: Optional[Dict] = None
         self.api_sweeps: bool = True
@@ -125,10 +130,10 @@ class SweepTable(QAbstractTableModel):
         self.colnames = ["a", "b", "c", "d"]
 
         self._data = [
-            [1, 2, 3, 4],
-            [5, 6, 7, 8],
-            [9, 10, 11, 12],
-            [13, 14, 15, 16]
+            [1, False, 3, 4],
+            [5, False, 7, 8],
+            [9, False, 11, 12],
+            [13, False, 15, 16]
         ]
 
         for item in self._data:
@@ -159,7 +164,7 @@ class SweepTable(QAbstractTableModel):
         """ Returns the data stored under the given role for the item referred 
         to by the index.
         """
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
             value = self._data[index.row()][index.column()]
             return value
 
@@ -177,13 +182,40 @@ class SweepTable(QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
             return self.colnames[section]
 
+
+    def flags(
+        self,
+        index: QModelIndex
+    ) -> QtCore.Qt.ItemFlag:
+        flags = super(SweepTable, self).flags(index) 
+        
+        if index.column() == 1:
+            flags |= QtCore.Qt.ItemIsEditable
+
+        return flags
+
+    def setData(
+        self,
+        index: QModelIndex,
+        value: bool,  # TODO: typing
+        role: int = QtCore.Qt.EditRole
+    ) -> bool:
+
+        if index.column() != 1 or not isinstance(value, bool) or role != QtCore.Qt.EditRole:
+            return False
+        
+        self._data[index.row()][1] = value
+        return True
+
+
+
 class SvgDelegate(QStyledItemDelegate):
 
     def paint(
         self,
-        painter,
-        opt,
-        index
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex
     ):
 
         value = index.data()
@@ -192,37 +224,98 @@ class SvgDelegate(QStyledItemDelegate):
         renderer.load(value)
 
         bounds = QRectF(
-            float(opt.rect.x()), 
-            float(opt.rect.y()), 
-            float(opt.rect.width()), 
-            float(opt.rect.height())
+            float(option.rect.x()), 
+            float(option.rect.y()), 
+            float(option.rect.width()), 
+            float(option.rect.height())
         )
 
         renderer.render(painter, bounds)
         
 
+class CheckBoxDelegate(QStyledItemDelegate):
+
+    def createEditor(
+        self, 
+        parent: QWidget, 
+        option: QStyleOptionViewItem, 
+        index: QModelIndex
+    ) -> QCheckBox:
+        editor: QCheckBox = QCheckBox(parent)
+        editor.setCheckState(QtCore.Qt.Unchecked)
+        return editor
+
+
+    def setEditorData(
+        self,
+        editor: QCheckBox,
+        index: QModelIndex
+    ):
+        value: bool = bool(index.model().data(index, QtCore.Qt.EditRole))
+        if value:
+            editor.setCheckState(QtCore.Qt.Checked)
+        else:
+            editor.setCheckState(QtCore.Qt.Unchecked)
+
+
+    def setModelData(
+        self,
+        editor: QCheckBox,
+        model: QAbstractItemModel,
+        index: QModelIndex
+    ):
+
+        value = editor.checkState() == QtCore.Qt.Checked
+        model.setData(index, value, QtCore.Qt.EditRole)
+
+
+    def updateEditorGeometry(
+        self,
+        editor: QCheckBox,
+        option: QStyleOptionViewItem,
+        index: QModelIndex
+    ):
+        editor.setGeometry(option.rect)
+
+
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex
+    ):
+
+        # During editing this is painted at the same time as the editor
+        button = QStyleOptionButton()
+        button.rect = option.rect
+        button.state = QStyle.State_On if index.data() else QStyle.State_Off
+
+        app = QApplication.instance()
+        style = app.style()
+        style.drawControl(
+            QStyle.CE_CheckBox,
+            button,
+            painter
+        )        
+
+
 class SweepView(QTableView):
-    
+
     def __init__(self):
         super(SweepView, self).__init__()
 
-        svg_delegate = SvgDelegate()
-        self.setItemDelegateForColumn(3, svg_delegate)
+        self.svg_delegate = SvgDelegate()
+        self.cb_delegate = CheckBoxDelegate()
 
-
-class SweepPage(QWidget):
-    pass
-
-
-class CellPage(QWidget):
-    pass
+        self.setItemDelegateForColumn(3, self.svg_delegate)
+        self.setItemDelegateForColumn(1, self.cb_delegate)
 
 
 def tmp_mpl_svg(ct=1):
     ex = np.linspace(0, ct * np.pi, 100000)
     why = np.cos(ex)
 
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     
     ax.plot(ex, why)
 
@@ -236,13 +329,25 @@ class CentralWidget(QWidget):
 
     def init_ui(self):
 
-        # cell_page = QTextEdit()
         cell_page = QSvgWidget()
         cell_page.load(tmp_mpl_svg())
 
-        sweep_page = SweepView()  # QTextEdit()
+        sweep_page = SweepView()
 
         sweep_table = SweepTable()
+        # sweep_table = QStandardItemModel(4, 4)
+        # colnames = ["a", "b", "c", "d"]
+        # data = [
+        #     [1, False, 3, tmp_mpl_svg(4)],
+        #     [5, False, 7, tmp_mpl_svg(8)],
+        #     [9, False, 11, tmp_mpl_svg(12)],
+        #     [13, False, 15, tmp_mpl_svg(16)]
+        # ]
+        # for ii, row in enumerate(data):
+        #     for jj, datum in enumerate(row):
+        #         index = sweep_table.index(ii, jj, QModelIndex())
+        #         sweep_table.setData(index, datum)
+
         sweep_page.setModel(sweep_table)
         sweep_page.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         sweep_page.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
