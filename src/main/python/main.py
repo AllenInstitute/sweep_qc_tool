@@ -325,9 +325,18 @@ def tmp_mpl_svg(ct=1):
     return QByteArray(data.getvalue())
 
 
-class CentralWidget(QWidget):
+class MainWindow(QMainWindow):
+    """ The main window for this application.
+    """
 
     def init_ui(self):
+        """ Set up components for this window (and the rest of the application)
+        """
+
+        self.data: ExperimentData = ExperimentData()
+
+        file_menu: QMenu = self.menuBar().addMenu("file")
+        file_menu.addAction("load_nwb_file", self.load_nwb_dialog)
 
         cell_page = QSvgWidget()
         cell_page.load(tmp_mpl_svg())
@@ -335,18 +344,6 @@ class CentralWidget(QWidget):
         sweep_page = SweepView()
 
         sweep_table = SweepTable()
-        # sweep_table = QStandardItemModel(4, 4)
-        # colnames = ["a", "b", "c", "d"]
-        # data = [
-        #     [1, False, 3, tmp_mpl_svg(4)],
-        #     [5, False, 7, tmp_mpl_svg(8)],
-        #     [9, False, 11, tmp_mpl_svg(12)],
-        #     [13, False, 15, tmp_mpl_svg(16)]
-        # ]
-        # for ii, row in enumerate(data):
-        #     for jj, datum in enumerate(row):
-        #         index = sweep_table.index(ii, jj, QModelIndex())
-        #         sweep_table.setData(index, datum)
 
         sweep_page.setModel(sweep_table)
         sweep_page.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -361,24 +358,7 @@ class CentralWidget(QWidget):
         tabs.insertTab(1, cell_page, "cell")
         layout.addWidget(tabs)
 
-
-class MainWindow(QMainWindow):
-    """ The main window for this application.
-    """
-
-    def init_ui(self):
-        """ Set up components for this window (and the rest of the application)
-        """
-
-        self.data: ExperimentData = ExperimentData()
-
-        file_menu: QMenu = self.menuBar().addMenu("file")
-        file_menu.addAction("load_nwb_file", self.load_nwb_dialog)
-
-        main_widget = CentralWidget(self)
-        main_widget.init_ui()
-
-        self.setCentralWidget(main_widget)
+        self.setCentralWidget(tabs)
 
 
     def load_nwb_dialog(self):
