@@ -336,7 +336,12 @@ class MainWindow(QMainWindow):
         self.data: ExperimentData = ExperimentData()
 
         file_menu: QMenu = self.menuBar().addMenu("file")
-        file_menu.addAction("load_nwb_file", self.load_nwb_dialog)
+        file_menu.addAction("load nwb file", self.load_nwb_dialog)
+        file_menu.addAction("load from lims", lambda *a: a)
+        file_menu.addSeparator()
+        file_menu.addAction("export to json", lambda *a: a)
+        file_menu.addAction("export to lims", lambda *a: a)
+
 
         cell_page = QSvgWidget()
         cell_page.load(tmp_mpl_svg())
@@ -349,14 +354,14 @@ class MainWindow(QMainWindow):
         sweep_page.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         sweep_page.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        layout = QGridLayout()
-        self.setLayout(layout)
-        layout.setSpacing(10)
+        # layout = QGridLayout()
+        # self.setLayout(layout)
+        # layout.setSpacing(10)
 
         tabs = QTabWidget()
         tabs.insertTab(0, sweep_page, "sweeps")
         tabs.insertTab(1, cell_page, "cell")
-        layout.addWidget(tabs)
+        # layout.addWidget(tabs)
 
         self.setCentralWidget(tabs)
 
