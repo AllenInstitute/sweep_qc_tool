@@ -6,9 +6,9 @@ Intracellular electrophysiologists (icephys) would like a desktop GUI applicatio
 
 ## background
 
-Icephys experiments are conduction by patching a single cell, clamping its current (or voltage for certain QC purposes), providing stimulation, and recording responses. The stimuliation is patterned current. A presentation of a stimulus with particular parameters (e.g. a long square wave at `x` pA) is called a **sweep**.
+Icephys experiments are conduction by patching a single cell, clamping its current (or voltage for certain QC purposes), providing stimulation, and recording responses. The stimuliation is patterned current / voltage. A presentation of a stimulus with particular parameters (e.g. a long square wave at `x` pA) along with the response is called a **sweep**.
 
-Sweeps can go wrong. We have some automated tools for detecting bad sweeps, but they still require manual validation. That is the purpose of this app. Scientists would like to be able to look at statistics and plots of individual sweeps, along with characteristics of the whole cell, and decide whether each sweep is good or not. The results of that decision should be used by downstream processing stages. The primary such stage is **feature extraction**.
+Sweeps can go wrong. We have some automated tools for detecting bad sweeps, but they still require manual validation. That is the purpose of this app. Scientists would like to be able to look at characteristics and plots of individual sweeps, along with characteristics of the whole cell, and decide whether each sweep is good or not. The results of that decision should be used by downstream processing stages. The primary such stage is **feature extraction**.
 
 The icephys pipeline is organized into three components, each implemented in a Python package called `ipfx`. These are:
 - **sweep extraction**: sweeps need to be organized from the NWB2 file describing an experiment
@@ -20,9 +20,8 @@ We need to present results from all three stages to users of the sweep QC tool
 ## goals
 
 - can load ipfx experiments:
-    - from NWB 2 files
+    - from NWB2 files (ipfx dispatches an appropriate reader based on detected NWB version, so NWB2 will also be supported)
     - from LIMS
-        - must check ipfx version against pipeline
 - can load ancillary files
     - stimulus ontology from file
     - manual qc results from file
@@ -33,23 +32,19 @@ We need to present results from all three stages to users of the sweep QC tool
 - can save/post manual sweep qc results:
     - to json
     - to LIMS
-        - must check ipfx version against pipeline
-        - sets off a rerun of feature extraction
+        - sets off a LIMS job for feature extraction
 - displays two tabs
     - sweep tab: a table describing sweeps.
         - has columns:
             - auto_qc_state
             - manual_qc_state (editable dropdown)
-                - not qced
+                - not qced (output will default to auto qc result)
                 - passed
                 - failed
-                - no-extract
-                    - passed, but don't include in feature extraction
-                    - currently just equivalent to passed for downstream components.
             - sweep_name
             - sweep_type
             - clamp_mode
-            - fail reason
+            - fail tag
             - test_epoch_response: V/t during test epoch (only for current clamp). See `ipfx.plot_qc_figures.plot_sweep_figures`
             - experiment_epoch_response: V/t during experiment epoch (only for current clamp). See `ipfx.plot_qc_figures.plot_sweep_figures`
         - users can update the manual qc state associated with each sweep. Options:
@@ -64,9 +59,16 @@ nice to have:
 - threading feature extraction. We could have feature extraction (the most costly ipfx stage) recalculate in a separate thread whenever a user changes the sweep selection. Prior results could be stored in an lru cache. This would speed up the workflow and avoid the requirement that users manually refresh.
 - nifty editing functionality (e.g. `ctrl-z`)
 - nicer deployment (e.g. checking for updates)
+- checkpointing. As planned here, the user must manually save
 
 out of scope:
 - functional updates to ipfx (though we may need to add entry points)
+- no-extract option for state
+    - passed, but don't include in feature extraction
+    - downstream components don't know how to handle this now, so LIMS work is required
+- must check ipfx version against pipeline
+    - LIMS cannot see the ipfx version currently and so cannot describe it to the qc tool
+- anything to do with existing QC report generation
 
 ## plan
 
@@ -77,6 +79,7 @@ out of scope:
     1. extracting sweeps for an experiment
     2. performing automatic qc on an experiment
     3. calculating higher-order features of an experiment.
+    4. plots figures
 - fbs: packaging and deployment tool for PyQt5
 - pyqtgraph: provides interactive graphing utilities embeddable as qt widgets.
 
@@ -245,7 +248,20 @@ views and helpers:
     7. When the user presses refresh, feature extraction is run. When completed, the `fx_data` becomes valid and emits `fxValid`.
 
 - The user saves data to LIMS
-    1. The user selects File -> export to lims.
-    2. If fx_data is not valid, a dialog is opened asking the user if they want to continue, or go back, or go back and refresh.
-    3. If the user did not load from lims, they are prompted for lims credentials and an experiment id.
-    4. The user selects "post to lims" and a request / sql statement is made updating data in LIMs. When it succeeds, a popup is shown.
+    1. The user selects File -> export to LIMS. This triggers the export to lims `QAction`, which is registered to `Settings.export_to_lims` 
+    2. If a refresh is needed (`settings` was notified by `fx_data` when it became valid / invalid), a `QDialog` is opened prompting the user to 
+        - continue
+        - stop and refresh
+        - stop
+    3. `settings` checks for a lims host and LIMS credentials, as well as an experiment ID. If it does not find them, it opens a `QDialog` prompting the user to enter them.
+    4. `settings` opens a `QDialog` asking the user to
+        - review LIMS host
+        - review experiment id
+        - opt in to requesting that LIMS start a feature extraction job on successful post
+    5. `settings `makes an http post request (or sql update depending on whether LIMS offers routes) updating the data.
+    6. if the user asked to start an feature extraction job, `settings` requests reprocessing. If LIMS offered a convienience route this could be collapsed into 5.
+
+
+### pictures
+
+![diagram of components](./components.jpg)
