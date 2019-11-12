@@ -136,10 +136,10 @@ views and helpers:
         - bridge balance: bridge_balance_mohm
         - pre_vm: pre_vm_mv
         - leak: leak_pa
-    - long_square_features: Plots describing response to long squares stimulus
+    - subthreshold_long_square_features: Plots describing response to long squares stimulus
         - subthreshold: a plot of stimulation current (pA) vs min membrane threshold (mV) on all long squares sweeps for which no spikes were emitted. Also includes best linear fit.
         - tau plot: membrane time constant (tau) vs. stimulation current (pA) scatter across sweeps (with mean).
-        - sweep plots: same as experiment_epoch_response plots. Probably don't need these here
+        - sweep plots: same as experiment_epoch_response plots, with min voltage annotated. Probably don't need these here
 
 
 ### classes
