@@ -15,7 +15,10 @@ The icephys pipeline is organized into three components, each implemented in a P
 - **automatic qc**: each sweep is assigned a qc state based on automated criteria
 - **feature extraction**: a set of cell-scale features are calculated. Only sweeps that have passed QC (automatic and manual) are included.
 
-We need to present results from all three stages to users of the sweep QC tool
+We need to present results from all three stages to users of the sweep QC tool. For instance, the sweep table ought to look something like this:
+
+![sweep table mockup](sweep_page.png)
+
 
 ## goals
 
