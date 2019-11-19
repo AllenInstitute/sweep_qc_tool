@@ -5,16 +5,16 @@ from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QWidget, QTabWidget,
     QTableView, QGraphicsView,
     QMenuBar,
-    QVBoxLayout, QHBoxLayout
+    QVBoxLayout, QHBoxLayout,
+    QFileDialog
 )
 from PyQt5.QtCore import pyqtSignal
 from pyqtgraph import GraphicsLayoutWidget
 
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
-from settings import Settings
 from pre_fx_data import PreFxData
-
+from pre_fx_controller import PreFxController
 
 class SweepPage(QTableView):
     def __init__(self):
@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(tab_widget)
 
 
-    def create_main_menu_bar(self, settings_data: Settings):
+    def create_main_menu_bar(self, pre_fx_controller: PreFxController):
 
         self.main_menu_bar = self.menuBar()
         self.file_menu = self.main_menu_bar.addMenu("File")
@@ -70,32 +70,37 @@ class MainWindow(QMainWindow):
         self.main_menu_bar.addMenu("Settings")
         self.main_menu_bar.addMenu("Help")
 
-        self.file_menu.addAction("Load NWB file", settings_data.load_nwb_file)
+        self.file_menu.addAction(
+            pre_fx_controller.load_data_set_action
+        )
         self.file_menu.addAction("Load from LIMS")
         self.file_menu.addSeparator()
         self.file_menu.addAction("Export to JSON")
         self.file_menu.addAction("Export to LIMS")
-
-
-
-
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(
+            pre_fx_controller.load_stimulus_ontology_action
+        )
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(
+            pre_fx_controller.load_qc_criteria_action
+        )
 
 class Application(object):
 
     def __init__(self):
         self.app_cntxt = ApplicationContext()
 
-        self.settings: Settings = Settings()
+        self.pre_fx_controller: PreFxController = PreFxController()
         self.pre_fx_data: PreFxData = PreFxData()
+
         self.main_window = MainWindow()
 
-        self.settings.connect(self.pre_fx_data)
-        self.pre_fx_data.connect(self.settings)
+        self.pre_fx_controller.connect(self.pre_fx_data)
+        self.main_window.create_main_menu_bar(self.pre_fx_controller)
 
-        self.main_window.create_main_menu_bar(self.settings)
-        self.settings.load_stimulus_ontology()
-
-
+        self.pre_fx_data.set_default_stimulus_ontology()
+        self.pre_fx_data.set_default_qc_criteria()
 
     def run(self):
         self.main_window.show()
@@ -103,6 +108,7 @@ class Application(object):
 
 
 if __name__ == '__main__':
+    import logging; logging.getLogger().setLevel(logging.INFO)
     app = Application()
     exit_code = app.run()
     sys.exit(exit_code)
