@@ -45,18 +45,28 @@ class SweepPage(QWidget):
         sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-class CellPage(QWidget):
+
+class FeaturePage(QWidget):
     def __init__(self):
         super().__init__()
 
         cell_features_table = QTableView()
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        layout.addWidget(cell_features_table)
+
+class PlotPage(QWidget):
+    def __init__(self):
+        super().__init__()
+
         cell_plots = CellPlotsView()
 
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(cell_features_table,1)
-        layout.addWidget(cell_plots,3)
+        layout.addWidget(cell_plots)
 
 
 class CellPlotsView(QGraphicsView):
@@ -75,12 +85,14 @@ class MainWindow(QMainWindow):
 
         # Create tab pages
         sweep_page = SweepPage()
-        cell_page = CellPage()
+        feature_page = FeaturePage()
+        plot_page = PlotPage()
 
         # Create tab widget
         tab_widget = QTabWidget()
         tab_widget.insertTab(0, sweep_page, "Sweeps")
-        tab_widget.insertTab(1, cell_page, "Cell")
+        tab_widget.insertTab(1, feature_page, "Features")
+        tab_widget.insertTab(2, plot_page, "Plots")
 
         # Set tabs as a central widget
         self.setCentralWidget(tab_widget)
