@@ -1,7 +1,7 @@
 import json
 import logging
 import copy
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -27,13 +27,42 @@ class PreFxData(QObject):
     end_commit_calculated = pyqtSignal(name="end_commit_calculated")
 
     def __init__(self):
+        """ Main data store for all data upstream of feature extraction. This
+        includes:
+            - the EphysDataSet
+            - the StimulusOntology
+            - the qc criteria
+            - the sweep extraction results
+            - the qc results
+        """
         super(PreFxData, self).__init__()
 
         self._stimulus_ontology: Optional[StimulusOntology] = None
         self._qc_criteria: Optional[Dict] = None
         self.data_set: Optional[EphysDataSet] = None
 
-    def _notifying_setter(self, attr_name, value, on_set, on_unset):
+    def _notifying_setter(
+        self, 
+        attr_name: str, 
+        value: Any, 
+        on_set: pyqtSignal, 
+        on_unset: pyqtSignal
+    ):
+        """ Utility for a setter that emits Qt signals when the attribute in 
+        question changes state.
+
+        Parameters
+        ----------
+        attr_name :
+            identifies attribute to be set
+        value : 
+            set attribute to this value
+        on_set : 
+            emitted when the new value is not None
+        on_unset :
+            emitted when the new value is None
+
+        """
         setattr(self, attr_name, value)
 
         if value is None:
@@ -76,13 +105,23 @@ class PreFxData(QObject):
         self.load_qc_criteria_from_json(DEFAULT_QC_CRITERIA_FILE)
 
     def load_stimulus_ontology_from_json(self, path: str):
+        """ Attempts to read a stimulus ontology file from a JSON. If 
+        successful (and other required data are already set), attempts to 
+        run the pre-fx pipeline
+
+        Parameters
+        ----------
+        path : 
+            load ontology from here
+
+        """
 
         try:
             with open(path, "r") as ontology_file:
                 ontology_data = json.load(ontology_file)
             ontology = StimulusOntology(ontology_data)
             
-            if self.data_set is not None and self.qc_criteria is not None:
+            if self.nwb_path is not None and self.qc_criteria is not None:
                 self.run_pipeline(
                     self.nwb_path, 
                     ontology, 
@@ -100,12 +139,21 @@ class PreFxData(QObject):
             )
 
     def load_qc_criteria_from_json(self, path: str):
+        """ Attempts to read qc criteria from a JSON. If successful (and other 
+        required data are already set), attempts to run the pre-fx pipeline
+
+        Parameters
+        ----------
+        path : 
+            load criteria from here
+
+        """
 
         try:
             with open(path, "r") as criteria_file:
                 criteria = json.load(criteria_file)
             
-            if self.data_set is not None and self.stimulus_ontology is not None:
+            if self.nwb_path is not None and self.stimulus_ontology is not None:
                 self.run_pipeline(
                     self.nwb_path, 
                     self.stimulus_ontology, 
@@ -123,6 +171,16 @@ class PreFxData(QObject):
             )
 
     def load_data_set_from_nwb(self, path: str):
+        """ Attempts to read an NWB file describing an experiment. Fails if 
+        qc criteria or stimulus ontology not already present. Otherwise, 
+        attempts to run the pre-fx pipeline.
+
+        Parameters
+        ----------
+        path : 
+            load dataset from here
+
+        """
 
         try:
             if self.stimulus_ontology is None:
