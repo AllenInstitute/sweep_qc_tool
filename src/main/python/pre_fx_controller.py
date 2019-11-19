@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QDialog,
     QGridLayout,
-    QTextEdit
+    QTextEdit,
+    QMessageBox
 )
 from PyQt5.QtCore import pyqtSignal
 
@@ -133,6 +134,14 @@ class PreFxController(QWidget):
         stimulus ontology.
         """
 
+        if self._stimulus_ontology is not None:
+            if QMessageBox.question(
+                self, 
+                "override stimulus ontology?", 
+                "This will override your existing stimulus ontology. Proceed?"
+            ) == QMessageBox.No:
+                return
+
         path = QFileDialog.getOpenFileName(
             self, 
             "load stimulus ontology file", 
@@ -149,6 +158,14 @@ class PreFxController(QWidget):
         """ Prompts the user to select a JSON file containing serialized 
         ipfx qc criteria settings.
         """
+
+        if self._qc_criteria is not None:
+            if QMessageBox.question(
+                self, 
+                "override QC criteria?", 
+                "This will override your existing QC criteria. Proceed?"
+            ) == QMessageBox.No:
+                return
 
         path = QFileDialog.getOpenFileName(
             self, 
