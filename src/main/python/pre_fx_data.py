@@ -9,7 +9,7 @@ from ipfx.ephys_data_set import EphysDataSet
 from ipfx.qc_feature_extractor import cell_qc_features, sweep_qc_features
 from ipfx.qc_feature_evaluator import qc_experiment, DEFAULT_QC_CRITERIA_FILE
 from ipfx.bin.run_qc import qc_summary
-from ipfx.stimulus import StimulusOntology
+from ipfx.stimulus import StimulusOntology, Stimulus
 from ipfx.data_set_utils import create_data_set
 
 from error_handling import exception_message
@@ -17,10 +17,10 @@ from error_handling import exception_message
 
 class PreFxData(QObject):
 
-    stimulus_ontology_set = pyqtSignal(name="stimulus_ontology_set")
+    stimulus_ontology_set = pyqtSignal(StimulusOntology, name="stimulus_ontology_set")
     stimulus_ontology_unset = pyqtSignal(name="stimulus_ontology_unset")
 
-    qc_criteria_set = pyqtSignal(name="qc_criteria_set")
+    qc_criteria_set = pyqtSignal(dict, name="qc_criteria_set")
     qc_criteria_unset = pyqtSignal(name="qc_criteria_unset")
 
     begin_commit_calculated = pyqtSignal(name="begin_commit_calculated")
@@ -40,13 +40,15 @@ class PreFxData(QObject):
         self._stimulus_ontology: Optional[StimulusOntology] = None
         self._qc_criteria: Optional[Dict] = None
         self.data_set: Optional[EphysDataSet] = None
+        self.nwb_path: Optional[str] = None
 
     def _notifying_setter(
         self, 
         attr_name: str, 
         value: Any, 
         on_set: pyqtSignal, 
-        on_unset: pyqtSignal
+        on_unset: pyqtSignal,
+        send_value: bool = False
     ):
         """ Utility for a setter that emits Qt signals when the attribute in 
         question changes state.
@@ -61,6 +63,8 @@ class PreFxData(QObject):
             emitted when the new value is not None
         on_unset :
             emitted when the new value is None
+        send_value : 
+            if True, the new value will be included in the emitted signal
 
         """
         setattr(self, attr_name, value)
@@ -68,7 +72,10 @@ class PreFxData(QObject):
         if value is None:
             on_unset.emit()
         else:
-            on_set.emit()
+            if send_value:
+                on_set.emit(value)
+            else:
+                on_set.emit()
 
     @property
     def stimulus_ontology(self) -> Optional[StimulusOntology]:
@@ -80,7 +87,8 @@ class PreFxData(QObject):
             "_stimulus_ontology", 
             value,
             self.stimulus_ontology_set, 
-            self.stimulus_ontology_unset
+            self.stimulus_ontology_unset,
+            send_value=True
         )
 
     @property
@@ -93,7 +101,8 @@ class PreFxData(QObject):
             "_qc_criteria", 
             value,
             self.qc_criteria_set, 
-            self.qc_criteria_unset
+            self.qc_criteria_unset,
+            send_value=True
         )
 
     def set_default_stimulus_ontology(self):

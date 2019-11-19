@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         self.main_menu_bar = self.menuBar()
         self.file_menu = self.main_menu_bar.addMenu("File")
         self.main_menu_bar.addMenu("Edit")
-        self.main_menu_bar.addMenu("Settings")
+        self.settings_menu = self.main_menu_bar.addMenu("Settings")
         self.main_menu_bar.addMenu("Help")
 
         self.file_menu.addAction(
@@ -85,6 +85,10 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(
             pre_fx_controller.load_qc_criteria_action
         )
+
+        self.settings_menu.addAction(pre_fx_controller.show_stimulus_ontology_action)
+        self.settings_menu.addAction(pre_fx_controller.show_qc_criteria_action)
+
 
 class Application(object):
 
