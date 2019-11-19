@@ -4,7 +4,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QWidget, QTabWidget,
     QTableView, QGraphicsView,
-    QMenuBar,
+    QHeaderView,
     QVBoxLayout, QHBoxLayout,
     QFileDialog
 )
@@ -13,13 +13,37 @@ from pyqtgraph import GraphicsLayoutWidget
 
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
+from sweep import SweepTableView, SweepTableModel
 from pre_fx_data import PreFxData
 from pre_fx_controller import PreFxController
 
-class SweepPage(QTableView):
+class SweepPage(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.colnames = ["sweep number",
+                         "sweep name",
+                         "stimulus type",
+                         "auto QC state",
+                         "manual QC state",
+                         "fail tags",
+                         "test epoch",
+                         "experiment epoch"
+                         ]
+
+        sweep_view = SweepTableView(self.colnames)
+
+        sweep_model = SweepTableModel(self.colnames)
+        sweep_model.get_data()
+
+        sweep_view.setModel(sweep_model)
+
+        layout = QVBoxLayout()
+        layout.addWidget(sweep_view)
+        self.setLayout(layout)
+
+        sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
 class CellPage(QWidget):
     def __init__(self):
