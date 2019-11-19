@@ -92,6 +92,8 @@ class PreFxController(QWidget):
         pre_fx_data.qc_criteria_set.connect(self.on_qc_criteria_set)
         pre_fx_data.qc_criteria_unset.connect(self.on_qc_criteria_unset)
 
+        pre_fx_data.end_commit_calculated.connect(self.on_data_set_set)
+
     def on_stimulus_ontology_set(self, ontology):
         """ Triggered when the PreFxData's stimulus_ontology becomes not None
         """
@@ -183,6 +185,15 @@ class PreFxController(QWidget):
         """ Prompts the user to select an NWB file containing data for one 
         experiment.
         """
+
+        if self._has_data_set:
+            if QMessageBox.question(
+                self, 
+                "override data set?", 
+                "This will override your existing data. Proceed?"
+            ) == QMessageBox.No:
+                return
+
         path = QFileDialog.getOpenFileName(
             self, "load NWB file", str(Path.cwd()), "NWB files (*.nwb)"
         )[0]
