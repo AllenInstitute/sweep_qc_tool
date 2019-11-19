@@ -37,6 +37,7 @@ class SweepPage(QWidget):
         sweep_model.get_data()
 
         sweep_view.setModel(sweep_model)
+        sweep_view.open_persistent_editor_on_column(4)
 
         layout = QVBoxLayout()
         layout.addWidget(sweep_view)
