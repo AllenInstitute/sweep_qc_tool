@@ -131,7 +131,7 @@ class PreFxData(QObject):
             ontology = StimulusOntology(ontology_data)
             
             if self.nwb_path is not None and self.qc_criteria is not None:
-                self.run_pipeline(
+                self.run_extraction_and_auto_qc(
                     self.nwb_path, 
                     ontology, 
                     self.qc_criteria, 
@@ -163,7 +163,7 @@ class PreFxData(QObject):
                 criteria = json.load(criteria_file)
             
             if self.nwb_path is not None and self.stimulus_ontology is not None:
-                self.run_pipeline(
+                self.run_extraction_and_auto_qc(
                     self.nwb_path, 
                     self.stimulus_ontology, 
                     criteria, 
@@ -197,7 +197,7 @@ class PreFxData(QObject):
             elif self.qc_criteria is None:
                 raise ValueError("must set qc criteria before loading a data set!")
             
-            self.run_pipeline(path, self.stimulus_ontology, self.qc_criteria, commit=True)
+            self.run_extraction_and_auto_qc(path, self.stimulus_ontology, self.qc_criteria, commit=True)
 
         except Exception as err:
             exception_message(
@@ -207,7 +207,7 @@ class PreFxData(QObject):
             )
 
 
-    def run_pipeline(self, nwb_path, stimulus_ontology, qc_criteria, commit=True):
+    def run_extraction_and_auto_qc(self, nwb_path, stimulus_ontology, qc_criteria, commit=True):
 
         data_set = create_data_set(
             sweep_info=None,
