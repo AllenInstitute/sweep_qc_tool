@@ -113,6 +113,13 @@ class SweepTableView(QTableView):
         self.setItemDelegateForColumn(self.colnames.index("experiment epoch"), self.svg_delegate)
         self.setItemDelegateForColumn(self.colnames.index("manual QC state"), self.cb_delegate)
 
+    def open_persistent_editor_on_column(self,
+                                         column: int
+                                         ):
+        """ Make table cells editable with a single-click
+        """
+        for row in range(self.model().rowCount()):
+            self.openPersistentEditor(self.model().index(row, column))
 
 
 def tmp_mpl_svg(ct=1):
