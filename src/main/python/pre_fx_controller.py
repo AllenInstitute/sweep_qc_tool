@@ -21,7 +21,7 @@ class PreFxController(QWidget):
     selected_stimulus_ontology_path = pyqtSignal(str, name="selected_stimulus_ontology_path")
     selected_qc_criteria_path = pyqtSignal(str, name="selected_qc_criteria_path")
     selected_data_set_path = pyqtSignal(str, name="selected_data_set_path")
-
+    selected_manual_states_path = pyqtSignal(str, name="selected_manual_states_path")
 
     def __init__(self, *args, **kwargs):
         """PreFxController provides an interface between GUI elements, such as 
@@ -63,6 +63,10 @@ class PreFxController(QWidget):
         self.show_stimulus_ontology_action = QAction("Display stimulus ontology", self)
         self.show_stimulus_ontology_action.triggered.connect(self.show_stimulus_ontology)
 
+        self.export_manual_states_to_json_action = QAction("Export manual states to JSON", self)
+        self.export_manual_states_to_json_action.triggered.connect(self.export_manual_states_to_json)
+
+
         self.on_stimulus_ontology_unset()
         self.on_qc_criteria_unset()
         self.on_data_set_unset()
@@ -84,6 +88,7 @@ class PreFxController(QWidget):
         self.selected_stimulus_ontology_path.connect(pre_fx_data.load_stimulus_ontology_from_json)
         self.selected_qc_criteria_path.connect(pre_fx_data.load_qc_criteria_from_json)
         self.selected_data_set_path.connect(pre_fx_data.load_data_set_from_nwb)
+        self.selected_manual_states_path.connect(pre_fx_data.save_manual_states_to_json)
 
         # data -> controller
         pre_fx_data.stimulus_ontology_set.connect(self.on_stimulus_ontology_set)
@@ -211,6 +216,16 @@ class PreFxController(QWidget):
             self
         )
 
+    def export_manual_states_to_json(self):
+        """Prompt the user to select the JSON file for saving manual qc states
+        as well as provenance information
+        """
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "save JSON file", str(Path.cwd()), "All Files (*);;JSON files (*.json)"
+        )
+
+        self.selected_manual_states_path.emit(path)
 
     def show_stimulus_ontology(self):
         simple_ro_text_dialog(
