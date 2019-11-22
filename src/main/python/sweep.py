@@ -25,10 +25,10 @@ class SweepTableModel(QAbstractTableModel):
             self._data = data
         else:
             self._data = [
-                [1, "abs0", "Long Square", "passed", "None", None],
-                [3, "abs1", "Long Square", "passed", "None", None],
-                [7, "abs2", "Short Square", "failed", "None", "Vm above threshold, Noise above threshold"],
-                [13, "abs3", "Ramp", "passed", "None", None],
+                [1, "abs0", "Long Square", "passed", "default", None],
+                [3, "abs1", "Long Square", "passed", "default", None],
+                [7, "abs2", "Short Square", "failed", "default", "Vm above threshold, Noise above threshold"],
+                [13, "abs3", "Ramp", "passed", "default", None],
             ]
 
         for item in self._data:
@@ -106,7 +106,7 @@ class SweepTableView(QTableView):
         super().__init__()
         self.colnames = colnames
         self.svg_delegate = SvgDelegate()
-        manual_qc_choices = ["None", "Manual failed", "Manual passed"]
+        manual_qc_choices = ["default", "failed", "passed"]
         self.cb_delegate = ComboBoxDelegate(self, manual_qc_choices)
 
         self.setItemDelegateForColumn(self.colnames.index("test epoch"), self.svg_delegate)
