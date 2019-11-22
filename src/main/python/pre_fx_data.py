@@ -1,8 +1,9 @@
 import json
 import logging
+import os
 import copy
 from typing import Optional, Dict, Any
-
+import ipfx
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from ipfx.ephys_data_set import EphysDataSet
@@ -13,7 +14,9 @@ from ipfx.stimulus import StimulusOntology, Stimulus
 from ipfx.data_set_utils import create_data_set
 
 from error_handling import exception_message
+from marshmallow import ValidationError
 
+from schemas import PipelineInput
 
 class PreFxData(QObject):
 
@@ -129,7 +132,8 @@ class PreFxData(QObject):
             with open(path, "r") as ontology_file:
                 ontology_data = json.load(ontology_file)
             ontology = StimulusOntology(ontology_data)
-            
+            self.ontology_file = path
+
             if self.nwb_path is not None and self.qc_criteria is not None:
                 self.run_extraction_and_auto_qc(
                     self.nwb_path, 
@@ -205,6 +209,47 @@ class PreFxData(QObject):
                 f"failed to load NWB file from {path}",
                 err
             )
+
+    def extract_manual_sweep_states(self):
+        """ Extract manual sweep states in the format schemas.ManualSweepStates
+        from PreFxData
+        """
+
+        return [
+            {
+                "sweep_number": 25,
+                "sweep_state": "failed"
+            },
+            {
+                "sweep_number": 26,
+                "sweep_state": "failed"
+            },
+
+               ]
+
+    def save_manual_states_to_json(self, path: str):
+
+        json_data = {
+            "input_nwb_file": self.nwb_path,
+            "stimulus_ontology_file": self.ontology_file,
+            "manual_sweep_states": self.extract_manual_sweep_states(),
+            "qc_criteria": self._qc_criteria,
+            "ipfx_version": ipfx.__version__
+        }
+
+        try:
+            PipelineInput().load(json_data)
+            with open(path, 'w') as f:
+                json.dump(json_data, f, indent=4)
+
+        except ValidationError as err:
+            exception_message(
+                "Unable to save manual states to JSON",
+                f"manual states data failed schema validation {data}",
+                err
+            )
+
+
 
 
     def run_extraction_and_auto_qc(self, nwb_path, stimulus_ontology, qc_criteria, commit=True):
