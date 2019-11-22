@@ -112,8 +112,8 @@ class MainWindow(QMainWindow):
         )
         self.file_menu.addAction("Load from LIMS")
         self.file_menu.addSeparator()
-        self.file_menu.addAction("Export to JSON")
-        self.file_menu.addAction("Export to LIMS")
+        self.file_menu.addAction(pre_fx_controller.export_manual_states_to_json_action)
+        self.file_menu.addAction("Export manual states to LIMS")
         self.file_menu.addSeparator()
         self.file_menu.addAction(
             pre_fx_controller.load_stimulus_ontology_action
