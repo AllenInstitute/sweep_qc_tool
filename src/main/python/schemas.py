@@ -3,24 +3,26 @@ from marshmallow.fields import Float, Str, Integer, Boolean, Nested, DateTime
 
 
 class QcCriteria(Schema):
-    pre_noise_rms_mv_max = Float()
-    post_noise_rms_mv_max = Float()
-    slow_noise_rms_mv_max = Float()
-    vm_delta_mv_max = Float()
-    blowout_mv_min = Float()
-    blowout_mv_max = Float()
-    electrode_0_pa_max = Float()
-    seal_gohm_min = Float()
-    input_vs_access_resistance_max = Float()
-    access_resistance_mohm_min = Float()
-    access_resistance_mohm_max = Float()
-    updated_at = DateTime()
-    leak_pa_max = Float()
-    leak_pa_min = Float()
-    electrode_0_pa_min = Float()
-    created_at = DateTime()
-    id = Integer()
-    name = Str()
+    pre_noise_rms_mv_max = Float(description="noise voltage (mV) before to stimulus, sweep-level gate")
+    post_noise_rms_mv_max = Float(description="noise voltage (mV) after stimulus, sweep-level gate")
+    slow_noise_rms_mv_max = Float(description="patch instability voltage (mV) before stimulus , sweep-level gate")
+    vm_delta_mv_max = Float(description="voltage (mV) difference between beginning and end of sweep, sweep-level gate")
+    leak_pa_min = Float(description="min bias current (pA), sweep-level gate")
+    leak_pa_max = Float(description="max bias current (pA), sweep-level gate")
+
+    blowout_mv_min = Float(description="min blowout voltage (mV) cell-level gate")
+    blowout_mv_max = Float(description="max blowout voltage (mV), cell-level gate")
+    seal_gohm_min = Float(description="min seal resistance (GOhm), cell-level gate")
+    access_resistance_mohm_min = Float(description="min access resistance (MOhm), cell-level gate")
+    access_resistance_mohm_max = Float(description="max access resistance (MOhm), cell-level gate")
+    input_vs_access_resistance_max = Float(description="max of input vs access resistance")
+    electrode_0_pa_min = Float(description="min baseline (electrode zero) current (pA), cell-level gate")
+    electrode_0_pa_max = Float(description="max baseline (electrode zero) current (pA), cell-level gate")
+
+    created_at = DateTime(description="datetime when criteria created")
+    updated_at = DateTime(description="datetime when criteria updated")
+    id = Integer(description="criteria id")
+    name = Str(description="criteria name")
 
 
 class ManualSweepState(Schema):
