@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import argparse
 
 from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QWidget, QTabWidget,
@@ -129,7 +130,7 @@ class MainWindow(QMainWindow):
 
 class Application(object):
 
-    def __init__(self):
+    def __init__(self, output_dir):
         self.app_cntxt = ApplicationContext()
 
         self.pre_fx_controller: PreFxController = PreFxController()
@@ -137,6 +138,7 @@ class Application(object):
 
         self.main_window = MainWindow()
 
+        self.pre_fx_controller.set_output_path(output_dir)
         self.pre_fx_controller.connect(self.pre_fx_data)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
 
@@ -150,9 +152,16 @@ class Application(object):
 
 if __name__ == '__main__':
     import logging; logging.getLogger().setLevel(logging.INFO)
-    app = Application()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_dir", help="output path for manual states")
+    args = parser.parse_args()
+
+    app = Application(args.output_dir)
+
     exit_code = app.run()
     sys.exit(exit_code)
+
 
 
 

@@ -38,6 +38,13 @@ class PreFxController(QWidget):
 
         self.init_actions()
 
+    def set_output_path(self, output_path=None):
+        if output_path:
+            self.output_path = output_path
+        else:
+            self.output_path = str(Path.cwd())
+
+
     def init_actions(self):
         """PreFxController exposes several actions, suitable for a menu or 
         toolbar. These are:
@@ -49,13 +56,13 @@ class PreFxController(QWidget):
         """
 
         self.load_stimulus_ontology_action = QAction("Load stimulus ontology from JSON", self)
-        self.load_stimulus_ontology_action.triggered.connect(self.load_stimulus_ontology)
+        self.load_stimulus_ontology_action.triggered.connect(self.load_stimulus_ontology_dialog)
 
         self.load_qc_criteria_action = QAction("Load qc criteria from JSON", self)
-        self.load_qc_criteria_action.triggered.connect(self.load_qc_criteria)
+        self.load_qc_criteria_action.triggered.connect(self.load_qc_criteria_dialog)
 
         self.load_data_set_action = QAction("Load data set from NWB file", self)
-        self.load_data_set_action.triggered.connect(self.load_data_set)
+        self.load_data_set_action.triggered.connect(self.load_data_set_dialog)
 
         self.show_qc_criteria_action = QAction("Display QC criteria", self)
         self.show_qc_criteria_action.triggered.connect(self.show_qc_criteria)
@@ -64,7 +71,7 @@ class PreFxController(QWidget):
         self.show_stimulus_ontology_action.triggered.connect(self.show_stimulus_ontology)
 
         self.export_manual_states_to_json_action = QAction("Export manual states to JSON", self)
-        self.export_manual_states_to_json_action.triggered.connect(self.export_manual_states_to_json)
+        self.export_manual_states_to_json_action.triggered.connect(self.export_manual_states_to_json_dialog)
 
 
         self.on_stimulus_ontology_unset()
@@ -136,7 +143,7 @@ class PreFxController(QWidget):
         """
         self._has_data_set = False
 
-    def load_stimulus_ontology(self):
+    def load_stimulus_ontology_dialog(self):
         """ Prompts the user to select a JSON file containing a serialized ipfx 
         stimulus ontology.
         """
@@ -161,7 +168,7 @@ class PreFxController(QWidget):
 
         self.selected_stimulus_ontology_path.emit(path)
 
-    def load_qc_criteria(self):
+    def load_qc_criteria_dialog(self):
         """ Prompts the user to select a JSON file containing serialized 
         ipfx qc criteria settings.
         """
@@ -186,7 +193,7 @@ class PreFxController(QWidget):
 
         self.selected_qc_criteria_path.emit(path)
 
-    def load_data_set(self):
+    def load_data_set_dialog(self):
         """ Prompts the user to select an NWB file containing data for one 
         experiment.
         """
@@ -216,13 +223,13 @@ class PreFxController(QWidget):
             self
         )
 
-    def export_manual_states_to_json(self):
+    def export_manual_states_to_json_dialog(self):
         """Prompt the user to select the JSON file for saving manual qc states
         as well as provenance information
         """
 
         path, _ = QFileDialog.getSaveFileName(
-            self, "save JSON file", str(Path.cwd()), "All Files (*);;JSON files (*.json)"
+            self, "export to JSON file", self.output_path, "All Files (*);;JSON files (*.json)"
         )
 
         self.selected_manual_states_path.emit(path)
