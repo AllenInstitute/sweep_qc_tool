@@ -245,7 +245,7 @@ class PreFxData(QObject):
         except ValidationError as err:
             exception_message(
                 "Unable to save manual states to JSON",
-                f"manual states data failed schema validation {data}",
+                f"manual states data failed schema validation",
                 err
             )
 
