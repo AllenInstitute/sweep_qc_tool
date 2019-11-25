@@ -227,7 +227,7 @@ class PreFxData(QObject):
 
                ]
 
-    def save_manual_states_to_json(self, path: str):
+    def save_manual_states_to_json(self, filepath: str):
 
         json_data = {
             "input_nwb_file": self.nwb_path,
@@ -239,14 +239,18 @@ class PreFxData(QObject):
 
         try:
             PipelineInput().load(json_data)
-            with open(path, 'w') as f:
+            with open(filepath, 'w') as f:
                 json.dump(json_data, f, indent=4)
 
-        except ValidationError as err:
-            exception_message(
-                "Unable to save manual states to JSON",
-                f"manual states data failed schema validation",
-                err
+        except ValidationError as valerr:
+            exception_message("Unable to save manual states to JSON",
+                              f"Manual states data failed schema validation",
+                              valerr
+            )
+        except IOError as ioerr:
+            exception_message("Unable to write file",
+                              f'Unable to write to file {filepath}',
+                              ioerr
             )
 
 
