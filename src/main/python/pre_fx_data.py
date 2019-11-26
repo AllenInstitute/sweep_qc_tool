@@ -218,15 +218,11 @@ class PreFxData(QObject):
 
         return [
             {
-                "sweep_number": 25,
-                "sweep_state": "failed"
-            },
-            {
-                "sweep_number": 26,
-                "sweep_state": "failed"
-            },
-
-               ]
+                "sweep_number": sweep["sweep_number"],
+                "sweep_state": self.manual_qc_states[sweep["sweep_number"]]
+            }
+            for sweep in self.sweep_features
+        ]
 
     def save_manual_states_to_json(self, filepath: str):
 
@@ -287,7 +283,7 @@ class PreFxData(QObject):
 
             self.sweep_features = sweep_features
             self.sweep_states = sweep_states
-            self.manual_qc_states = {sweep["sweep_number"]: "None" for sweep in self.sweep_features}
+            self.manual_qc_states = {sweep["sweep_number"]: "default" for sweep in self.sweep_features}
 
             self.end_commit_calculated.emit(
                 self.sweep_features, self.sweep_states, self.manual_qc_states, self.data_set
