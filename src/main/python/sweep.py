@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
    QTableView
 )
 from PyQt5.QtCore import (
-    QAbstractTableModel, QModelIndex, QByteArray,
+    QAbstractTableModel, QModelIndex, QByteArray, pyqtSignal
 )
 from PyQt5 import QtCore
 
@@ -19,17 +19,22 @@ from pre_fx_data import PreFxData
 
 
 class SweepTableModel(QAbstractTableModel):
+
+    qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
+
     def __init__(self, colnames):
         super().__init__()
         self.colnames = colnames
+        self.column_map = {colname: idx for idx, colname in enumerate(colnames)}
         self._data = []
 
     
     def connect(self, data: PreFxData):
         data.end_commit_calculated.connect(self.on_new_data)
+        self.qc_state_updated.connect(data.on_manual_qc_state_updated)
 
 
-    def on_new_data(self, sweep_features, sweep_states, dataset):
+    def on_new_data(self, sweep_features, sweep_states, manual_qc_states, dataset):
         self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
         self._data = []
         self.endRemoveRows()
@@ -59,9 +64,9 @@ class SweepTableModel(QAbstractTableModel):
             self._data.append([
                 sweep_number,
                 sweep["stimulus_code"],
-                sweep["stimulus_name"],  # stimulus type
+                sweep["stimulus_name"],
                 state["passed"] and sweep["passed"], # auto qc
-                "None", # manual qc
+                manual_qc_states[sweep_number],
                 sweep["tags"] + state["reasons"], # fail tags
                 svg_from_mpl_axes(test_pulse_plot),
                 svg_from_mpl_axes(experiment_plot)
@@ -124,14 +129,21 @@ class SweepTableModel(QAbstractTableModel):
             value: bool,  # TODO: typing
             role: int = QtCore.Qt.EditRole
     ) -> bool:
+
+        current: str = self._data[index.row()][index.column()]
+
         if index.isValid() \
-                and isinstance(value, bool) \
-                and index.column() == self.colnames.index("manual QC state") \
-                and role == QtCore.Qt.EditRole:
+                and isinstance(value, str) \
+                and index.column() == self.column_map["manual QC state"] \
+                and role == QtCore.Qt.EditRole \
+                and value != current:
             self._data[index.row()][index.column()] = value
+            self.qc_state_updated.emit(
+                self._data[index.row()][self.column_map["sweep number"]], value
+            )
             return True
 
-        return True
+        return False
 
 
 class SweepTableView(QTableView):
@@ -147,30 +159,15 @@ class SweepTableView(QTableView):
         self.setItemDelegateForColumn(self.colnames.index("experiment epoch"), self.svg_delegate)
         self.setItemDelegateForColumn(self.colnames.index("manual QC state"), self.cb_delegate)
 
-    def open_persistent_editor_on_column(self,
-                                         column: int
-                                         ):
-        """ Make table cells editable with a single-click
-        """
+    def setModel(self, model: SweepTableModel):
+        super(SweepTableView, self).setModel(model)
+        model.rowsInserted.connect(self.persist_qc_editor)
+
+    def persist_qc_editor(self, *args, **kwargs):
+        column = self.colnames.index("manual QC state")
+
         for row in range(self.model().rowCount()):
             self.openPersistentEditor(self.model().index(row, column))
-
-
-def tmp_mpl_svg(ct=1):
-
-    ex = np.linspace(0, ct * np.pi, 100000)
-    why = np.cos(ex)
-
-    fig, ax = plt.subplots()
-
-    ax.plot(ex, why)
-
-    data = io.BytesIO()
-    plt.savefig(data, format="svg")
-    plt.close()
-
-
-    return QByteArray(data.getvalue())
 
 
 def svg_from_mpl_axes(fig):
