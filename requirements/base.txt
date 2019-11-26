@@ -1,3 +1,4 @@
 fbs==0.8.4
 PyQt5==5.13.2
 git+https://github.com/alleninstitute/ipfx
+pyqtgraph==0.10.0
