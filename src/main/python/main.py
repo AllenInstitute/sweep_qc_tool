@@ -32,6 +32,10 @@ class SweepPage(QWidget):
     )
 
     def __init__(self):
+        """ Holds and displays a table view (and associated model) containing 
+        information about individual sweeps. 
+        """
+
         super().__init__()
 
         self.sweep_view = SweepTableView(self.colnames)
@@ -46,7 +50,16 @@ class SweepPage(QWidget):
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-    def connect_model(self, data: PreFxData):
+    def connect(self, data: PreFxData):
+        """ Attach this component to others via signals and slots
+
+        Parameters
+        ----------
+        data : 
+            Will be used as the underlying data store (via this object's model).
+
+        """
+
         self.sweep_model.connect(data)
 
 
@@ -92,13 +105,39 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(tab_widget)
 
 
-    def insert_tabs(self, sweep_page, feature_page, plot_page):
+    def insert_tabs(
+        self, 
+        sweep_page: SweepPage, 
+        feature_page: FeaturePage, 
+        plot_page: PlotPage
+    ):
+        """ Setup tabs for this window's central viewport.
+
+        Parameters
+        ----------
+        sweep_page : 
+            Displays a table of sweeps and allows users to enter manual QC values.
+        feature_page : 
+            Displays a table of cell-scale features.
+        plot_page : 
+            Displays plots which describe the cell's response to various stimulus categories.
+
+        """
+
         self.centralWidget().insertTab(0, sweep_page, "Sweeps")
         self.centralWidget().insertTab(1, feature_page, "Features")
         self.centralWidget().insertTab(2, plot_page, "Plots")
 
 
     def create_main_menu_bar(self, pre_fx_controller: PreFxController):
+        """ Set up the main application menu.
+
+        Parameters
+        ----------
+        pre_fx_controller : 
+            Owns QActions for loading nwb data, stimulus ontologies, and qc criteria
+
+        """
 
         self.main_menu_bar = self.menuBar()
         self.file_menu = self.main_menu_bar.addMenu("File")
@@ -144,7 +183,7 @@ class Application(object):
 
         # connect components
         self.pre_fx_controller.connect(self.pre_fx_data)
-        self.sweep_page.connect_model(self.pre_fx_data)
+        self.sweep_page.connect(self.pre_fx_data)
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
 

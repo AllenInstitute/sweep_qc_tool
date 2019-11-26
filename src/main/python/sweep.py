@@ -1,4 +1,5 @@
 import io
+from typing import Dict, List
 
 from PyQt5.QtWidgets import (
    QTableView, QDialog, QGridLayout
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import bessel, filtfilt
 
 from ipfx.epochs import get_experiment_epoch
+from ipfx.ephys_data_set import EphysDataSet
 
 from delegates import (SvgDelegate, ComboBoxDelegate)
 from pre_fx_data import PreFxData
@@ -31,11 +33,44 @@ class SweepTableModel(QAbstractTableModel):
 
     
     def connect(self, data: PreFxData):
+        """ Set up signals and slots for communication with the underlying data store.
+
+        Parameters
+        ----------
+        data : 
+            Will be used as the underlying data store. Will emit notifications when 
+            data has been updated. Will recieve notifications when users update 
+            QC states for individual sweeps.
+
+        """
+
         data.end_commit_calculated.connect(self.on_new_data)
         self.qc_state_updated.connect(data.on_manual_qc_state_updated)
 
 
-    def on_new_data(self, sweep_features, sweep_states, manual_qc_states, dataset):
+    def on_new_data(
+        self, 
+        sweep_features: List[Dict], 
+        sweep_states: List, 
+        manual_qc_states: Dict[int, str], 
+        dataset: EphysDataSet
+    ):
+        """ Called when the underlying data has been completely replaced
+
+        Parameters
+        ----------
+        sweep_features : 
+            A list of dictionaries. Each element describes a sweep.
+        sweep_states : 
+            A list of dictionaries. Each element contains ancillary information about
+            automatic QC results for that sweep.
+        manual_qc_states : 
+            For each sweep, whether the user has manually passed or failed it (or left it untouched).
+        dataset : 
+            The underlying data. Used to extract sweepwise voltage traces
+
+        """
+
         self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
         self._data = []
         self.endRemoveRows()
@@ -80,17 +115,13 @@ class SweepTableModel(QAbstractTableModel):
 
         self.endInsertRows()
 
-    def rowCount(self, parent=None, *args, **kwargs):
-        """ Returns the number of rows under the given parent. When the parent
-        is valid it means that rowCount is returning the number of children of
-        parent.
+    def rowCount(self, *args, **kwargs):
+        """ The number of sweeps
         """
         return len(self._data)
 
-    def columnCount(self,  parent=None, *args, **kwargs) :
-        """ Returns the number of rows under the given parent. When the parent
-        is valid it means that rowCount is returning the number of children of
-        parent.
+    def columnCount(self, *args, **kwargs) -> int :
+        """ The number of sweep characteristics
         """
         return len(self.colnames)
 
@@ -99,9 +130,28 @@ class SweepTableModel(QAbstractTableModel):
              role: int = QtCore.Qt.DisplayRole
              ):
 
-        """ Returns the data stored under the given role for the item referred
-        to by the index.
+        """ The data stored at a given index.
+
+        Parameters
+        ----------
+        index :
+            Which table cell to read.
+        role : 
+            How the data is being accessed. Currently DisplayRole and EditRole are 
+            supported.
+
+        Returns
+        -------
+        None if
+            - the index is invalid (e.g. out of bounds)
+            - the role is not supported
+        otherwise whatever data is stored at the requested index.
+
         """
+
+        if not index.isValid():
+            return
+
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             return self._data[index.row()][index.column()]
 
@@ -112,8 +162,7 @@ class SweepTableModel(QAbstractTableModel):
             orientation: int = QtCore.Qt.Horizontal,
             role: int = QtCore.Qt.DisplayRole
     ):
-        """Returns the data for the given role and section in the header with
-        the specified orientation.
+        """ Returns the name of the 'section'th column 
         """
 
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
@@ -123,6 +172,9 @@ class SweepTableModel(QAbstractTableModel):
             self,
             index: QModelIndex
     ) -> QtCore.Qt.ItemFlag:
+        """ Returns integer flags for the item at a supplied index.
+        """
+
         flags = super(SweepTableModel, self).flags(index)
 
         if index.column() == self.colnames.index("manual QC state"):
@@ -133,9 +185,11 @@ class SweepTableModel(QAbstractTableModel):
     def setData(
             self,
             index: QModelIndex,
-            value: bool,  # TODO: typing
+            value: str,  # TODO: typing
             role: int = QtCore.Qt.EditRole
     ) -> bool:
+        """ Updates the data at the supplied index.
+        """
 
         current: str = self._data[index.row()][index.column()]
 
@@ -169,17 +223,41 @@ class SweepTableView(QTableView):
         self.clicked.connect(self.on_clicked)
 
     def setModel(self, model: SweepTableModel):
+        """ Attach a SweepTableModel to this view. The model will provide data for 
+        this view to display.
+        """
         super(SweepTableView, self).setModel(model)
         model.rowsInserted.connect(self.persist_qc_editor)
 
     def persist_qc_editor(self, *args, **kwargs):
+        """ Ensure that the QC state editor can be opened with a single click.
+
+        Parameters
+        ----------
+        all are ignored. They are present because this method is triggered by a data-carrying signal.
+
+        """
+
         column = self.colnames.index("manual QC state")
 
         for row in range(self.model().rowCount()):
             self.openPersistentEditor(self.model().index(row, column))
 
     def on_clicked(self, index: QModelIndex):
-        if not index.column() in {6, 7}:
+        """ When plot thumbnails are clicked, open a larger plot in a popup.
+
+        Parameters
+        ----------
+        index : 
+            Which plot to open. The popup will be mopved to this item's location.
+
+        """
+        
+        if not hasattr(self.model(), "column_map"):
+            return
+        column_map = self.model().column_map
+
+        if not index.column() in {column_map["test epoch"], column_map["experiment epoch"]}:
             return
 
         data = self.model().data(index)
@@ -197,6 +275,9 @@ class SweepTableView(QTableView):
 
 
 def svg_from_mpl_axes(fig):
+    """ Convert a matplotlib figure to SVG and store it in a Qt byte array.
+    """
+
     data = io.BytesIO()
     fig.savefig(data, format="svg")
     plt.close(fig)
