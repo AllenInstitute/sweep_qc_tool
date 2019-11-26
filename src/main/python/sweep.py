@@ -21,6 +21,10 @@ from delegates import (SvgDelegate, ComboBoxDelegate)
 from pre_fx_data import PreFxData
 
 
+PLOT_FONTSIZE = 24
+DEFAULT_FIGSIZE = (8, 8)
+
+
 class SweepPlotConfig(NamedTuple):
     test_plot_duration: float
     test_pulse_baseline_samples: int
@@ -29,6 +33,7 @@ class SweepPlotConfig(NamedTuple):
     experiment_baseline_end_index: int
     experiment_plot_bessel_order: int
     experiment_plot_bessel_critical_frequency: float
+
 
 class SweepTableModel(QAbstractTableModel):
 
@@ -118,10 +123,10 @@ class SweepTableModel(QAbstractTableModel):
                 self.plot_config.experiment_baseline_end_index
             )
 
-            test_pulse_plot = make_test_pulse_plot(sweep_number, test_time, 
-                test_voltage, previous_test_voltage, initial_test_voltage
+            test_pulse_plot = make_test_pulse_plot(
+                sweep_number, test_time, test_voltage, previous_test_voltage, initial_test_voltage
             )
-            experiment_plot = make_experiment_plot(exp_time, exp_voltage, exp_baseline)
+            experiment_plot = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline)
 
             self._data.append([
                 sweep_number,
@@ -324,7 +329,7 @@ def test_response_plot_data(sweep, plot_duration=0.1, num_baseline_samples=100):
 
 def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=None):
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
     if initial is not None:
         ax.plot(time, initial, linewidth=1, label=f"initial", color="green")
@@ -333,6 +338,11 @@ def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=Non
         ax.plot(time, previous, linewidth=1, label=f"previous", color="orange")
     
     ax.plot(time, voltage, linewidth=1, label=f"sweep {sweep_number}", color="blue")
+
+    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+    ax.legend()
+
     return fig
 
     
@@ -356,13 +366,17 @@ def experiment_plot_data(
     return time, voltage, baseline_mean
 
 
-def make_experiment_plot(exp_time, exp_voltage, exp_baseline):
+def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline):
     time_lim = [exp_time[0], exp_time[-1]]
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
-    ax.plot(exp_time, exp_voltage, linewidth=1)
-    ax.hlines(exp_baseline, *time_lim, linewidth=1)
+    ax.plot(exp_time, exp_voltage, linewidth=1, label=f"sweep {sweep_number}")
+    ax.hlines(exp_baseline, *time_lim, linewidth=1, label="baseline")
     ax.set_xlim(time_lim)
+
+    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+    ax.legend()
 
     return fig
