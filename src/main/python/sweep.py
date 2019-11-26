@@ -1,11 +1,12 @@
 import io
 
 from PyQt5.QtWidgets import (
-   QTableView
+   QTableView, QDialog, QGridLayout
 )
 from PyQt5.QtCore import (
     QAbstractTableModel, QModelIndex, QByteArray, pyqtSignal
 )
+from PyQt5.QtSvg import QSvgWidget
 from PyQt5 import QtCore
 
 import numpy as np
@@ -72,6 +73,11 @@ class SweepTableModel(QAbstractTableModel):
                 svg_from_mpl_axes(experiment_plot)
             ])
 
+            if initial_test_voltage is None:
+                initial_test_voltage = test_voltage
+                
+            previous_test_voltage = test_voltage
+
         self.endInsertRows()
 
     def rowCount(self, parent=None, *args, **kwargs):
@@ -98,6 +104,7 @@ class SweepTableModel(QAbstractTableModel):
         """
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             return self._data[index.row()][index.column()]
+
 
     def headerData(
             self,
@@ -159,6 +166,8 @@ class SweepTableView(QTableView):
         self.setItemDelegateForColumn(self.colnames.index("experiment epoch"), self.svg_delegate)
         self.setItemDelegateForColumn(self.colnames.index("manual QC state"), self.cb_delegate)
 
+        self.clicked.connect(self.on_clicked)
+
     def setModel(self, model: SweepTableModel):
         super(SweepTableView, self).setModel(model)
         model.rowsInserted.connect(self.persist_qc_editor)
@@ -169,10 +178,27 @@ class SweepTableView(QTableView):
         for row in range(self.model().rowCount()):
             self.openPersistentEditor(self.model().index(row, column))
 
+    def on_clicked(self, index: QModelIndex):
+        if not index.column() in {6, 7}:
+            return
+
+        data = self.model().data(index)
+        index_rect = self.visualRect(index)        
+        
+        popup = QDialog()
+        layout = QGridLayout()
+        svg = QSvgWidget()
+        svg.load(data)
+        
+        layout.addWidget(svg)
+        popup.setLayout(layout)
+        popup.move(index_rect.left(), index_rect.top())
+        popup.exec()
+
 
 def svg_from_mpl_axes(fig):
     data = io.BytesIO()
-    plt.savefig(data, format="svg")
+    fig.savefig(data, format="svg")
     plt.close(fig)
 
     return QByteArray(data.getvalue())
