@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import argparse
+import os
 
 from PyQt5.QtWidgets import (
     QMainWindow, QMenu, QWidget, QTabWidget,
@@ -14,7 +15,7 @@ from pyqtgraph import GraphicsLayoutWidget
 
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
-from sweep import SweepTableView, SweepTableModel
+from sweep import SweepTableView, SweepTableModel, SweepPlotConfig
 from pre_fx_data import PreFxData
 from pre_fx_controller import PreFxController
 
@@ -31,7 +32,7 @@ class SweepPage(QWidget):
         "experiment epoch"
     )
 
-    def __init__(self):
+    def __init__(self, sweep_plot_config: SweepPlotConfig):
         """ Holds and displays a table view (and associated model) containing 
         information about individual sweeps. 
         """
@@ -39,7 +40,7 @@ class SweepPage(QWidget):
         super().__init__()
 
         self.sweep_view = SweepTableView(self.colnames)
-        self.sweep_model = SweepTableModel(self.colnames)
+        self.sweep_model = SweepTableModel(self.colnames, sweep_plot_config)
 
         self.sweep_view.setModel(self.sweep_model)
 
@@ -167,14 +168,34 @@ class MainWindow(QMainWindow):
 
 class Application(object):
 
-    def __init__(self, output_dir):
+    def __init__(
+        self, 
+        output_dir: str, 
+        backup_experiment_start_index: int, 
+        experiment_baseline_start_index: int, 
+        experiment_baseline_end_index: int, 
+        test_plot_duration: float, 
+        test_pulse_baseline_samples: int,
+        experiment_plot_bessel_order: int,
+        experiment_plot_bessel_critical_frequency: float
+    ):
         self.app_cntxt = ApplicationContext()
+
+        sweep_plot_config = SweepPlotConfig(
+            test_plot_duration,
+            test_pulse_baseline_samples,
+            backup_experiment_start_index,
+            experiment_baseline_start_index, 
+            experiment_baseline_end_index,
+            experiment_plot_bessel_order,
+            experiment_plot_bessel_critical_frequency
+        )
 
         # initialize components
         self.main_window = MainWindow()
         self.pre_fx_controller: PreFxController = PreFxController()
         self.pre_fx_data: PreFxData = PreFxData()
-        self.sweep_page = SweepPage()
+        self.sweep_page = SweepPage(sweep_plot_config)
         self.feature_page = FeaturePage()
         self.plot_page = PlotPage()
 
@@ -201,10 +222,31 @@ if __name__ == '__main__':
     import logging; logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_dir", help="output path for manual states")
+    parser.add_argument("--output_dir", default=os.getcwd(), type=str, help="output path for manual states")
+    parser.add_argument("--backup_experiment_start_index", type=int, default=5000,
+        help="when plotting experiment pulses, where to set the start index if it is erroneously stored as <= 0"
+    )
+    parser.add_argument("--experiment_baseline_start_index", type=int, default=5000,
+        help="when plotting experiment pulses, where to start the baseline assessment epoch"
+    )
+    parser.add_argument("--experiment_baseline_end_index", type=int, default=5000,
+        help="when plotting experiment pulses, where to end the baseline assessment epoch"
+    )
+    parser.add_argument("--test_plot_duration", type=float, default=0.1,
+        help="in seconds, the amount of time to use as the test pulse plot's domain"
+    )
+    parser.add_argument("--test_pulse_baseline_samples", type=int, default=100,
+        help="when plotting test pulses, how many samples to use for baseline assessment"
+    )
+    parser.add_argument("--experiment_plot_bessel_order", type=int, default=4,
+        help="when plotting sweep voltage traces for the experiment epoch a lowpass bessel filter is applied to the trace. This parameter defines the order of that filter."
+    )
+    parser.add_argument("--experiment_plot_bessel_critical_frequency", type=float, default=0.1, 
+        help="when plotting sweep voltage traces for the experiment epoch a lowpass bessel filter is applied to the trace. This parameter defines the critical frequency of that filter."
+    )
     args = parser.parse_args()
 
-    app = Application(args.output_dir)
+    app = Application(**args.__dict__)
 
     exit_code = app.run()
     sys.exit(exit_code)

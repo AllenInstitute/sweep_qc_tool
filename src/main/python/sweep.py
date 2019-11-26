@@ -1,5 +1,5 @@
 import io
-from typing import Dict, List
+from typing import Dict, List, NamedTuple
 
 from PyQt5.QtWidgets import (
    QTableView, QDialog, QGridLayout
@@ -21,15 +21,30 @@ from delegates import (SvgDelegate, ComboBoxDelegate)
 from pre_fx_data import PreFxData
 
 
+class SweepPlotConfig(NamedTuple):
+    test_plot_duration: float
+    test_pulse_baseline_samples: int
+    backup_experiment_start_index: int
+    experiment_baseline_start_index: int
+    experiment_baseline_end_index: int
+    experiment_plot_bessel_order: int
+    experiment_plot_bessel_critical_frequency: float
+
 class SweepTableModel(QAbstractTableModel):
 
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
 
-    def __init__(self, colnames):
+    def __init__(
+        self, 
+        colnames: List[str],
+        plot_config: SweepPlotConfig
+    ):
         super().__init__()
         self.colnames = colnames
         self.column_map = {colname: idx for idx, colname in enumerate(colnames)}
         self._data = []
+
+        self.plot_config = plot_config
 
     
     def connect(self, data: PreFxData):
@@ -76,7 +91,11 @@ class SweepTableModel(QAbstractTableModel):
         self.endRemoveRows()
 
         state_lookup = {state["sweep_number"]: state for state in sweep_states}
-        bessel_num, bessel_denom = bessel(4, 0.1, "low")
+        bessel_num, bessel_denom = bessel(
+            self.plot_config.experiment_plot_bessel_order, 
+            self.plot_config.experiment_plot_bessel_critical_frequency, 
+            "low"
+        )
 
         previous_test_voltage = None
         initial_test_voltage = None
@@ -87,9 +106,16 @@ class SweepTableModel(QAbstractTableModel):
             state = state_lookup[sweep_number]
 
             sweep_data = dataset.sweep(sweep_number)
-            test_time, test_voltage = test_response_plot_data(sweep_data)
+            test_time, test_voltage = test_response_plot_data(
+                sweep_data, 
+                self.plot_config.test_plot_duration, 
+                self.plot_config.test_pulse_baseline_samples
+            )
             exp_time, exp_voltage, exp_baseline = experiment_plot_data(
-                sweep_data, bessel_num, bessel_denom
+                sweep_data, bessel_num, bessel_denom, 
+                self.plot_config.backup_experiment_start_index, 
+                self.plot_config.experiment_baseline_start_index, 
+                self.plot_config.experiment_baseline_end_index
             )
 
             test_pulse_plot = make_test_pulse_plot(sweep_number, test_time, 
@@ -310,15 +336,22 @@ def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=Non
     return fig
 
     
-def experiment_plot_data(sweep, bessel_num, bessel_denom):    
+def experiment_plot_data(
+    sweep, 
+    bessel_num, 
+    bessel_denom, 
+    backup_start_index: int = 5000, 
+    baseline_start_index: int = 5000, 
+    baseline_end_index: int = 9000
+):    
 
     experiment_start_index, _ = get_experiment_epoch(sweep.i, sweep.sampling_rate)
     if experiment_start_index <= 0:
-        experiment_start_index = 5000 # aaaaaaaaaaaaaaaaaaaaaaaaaaaah
+        experiment_start_index = backup_start_index
     
     time = sweep.t[experiment_start_index:]
     voltage = filtfilt(bessel_num, bessel_denom, sweep.v[experiment_start_index:], axis=0)
-    baseline_mean = np.mean(voltage[5000:9000]) # aaaaaaaaaaaaaaaaaaaaaaaaaaaah
+    baseline_mean = np.mean(voltage[baseline_start_index: baseline_end_index])
     
     return time, voltage, baseline_mean
 
