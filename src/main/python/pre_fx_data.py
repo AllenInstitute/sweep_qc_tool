@@ -27,7 +27,7 @@ class PreFxData(QObject):
     qc_criteria_unset = pyqtSignal(name="qc_criteria_unset")
 
     begin_commit_calculated = pyqtSignal(name="begin_commit_calculated")
-    end_commit_calculated = pyqtSignal(name="end_commit_calculated")
+    end_commit_calculated = pyqtSignal(list, list, EphysDataSet, name="end_commit_calculated")
 
     def __init__(self):
         """ Main data store for all data upstream of feature extraction. This
@@ -287,7 +287,9 @@ class PreFxData(QObject):
             self.sweep_features = sweep_features
             self.sweep_states = sweep_states
 
-            self.end_commit_calculated.emit()
+            self.end_commit_calculated.emit(
+                self.sweep_features, self.sweep_states, self.data_set
+            )
 
 
 def extract_qc_features(data_set):

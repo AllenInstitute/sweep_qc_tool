@@ -19,33 +19,36 @@ from pre_fx_data import PreFxData
 from pre_fx_controller import PreFxController
 
 class SweepPage(QWidget):
+
+    colnames: tuple = (
+        "sweep number",
+        "stimulus code",
+        "stimulus type",
+        "auto QC state",
+        "manual QC state",
+        "fail tags",
+        "test epoch",
+        "experiment epoch"
+    )
+
     def __init__(self):
         super().__init__()
 
-        self.colnames = ["sweep number",
-                         "sweep name",
-                         "stimulus type",
-                         "auto QC state",
-                         "manual QC state",
-                         "fail tags",
-                         "test epoch",
-                         "experiment epoch"
-                         ]
+        self.sweep_view = SweepTableView(self.colnames)
+        self.sweep_model = SweepTableModel(self.colnames)
 
-        sweep_view = SweepTableView(self.colnames)
-
-        sweep_model = SweepTableModel(self.colnames)
-        sweep_model.get_data()
-
-        sweep_view.setModel(sweep_model)
-        sweep_view.open_persistent_editor_on_column(4)
+        self.sweep_view.setModel(self.sweep_model)
+        self.sweep_view.open_persistent_editor_on_column(self.colnames.index("manual QC state"))
 
         layout = QVBoxLayout()
-        layout.addWidget(sweep_view)
+        layout.addWidget(self.sweep_view)
         self.setLayout(layout)
 
-        sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+    def connect_model(self, data: PreFxData):
+        self.sweep_model.connect(data)
 
 
 class FeaturePage(QWidget):
@@ -85,19 +88,15 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Ephys Sweep QC Tool")
         self.resize(800, 1000)
 
-        # Create tab pages
-        sweep_page = SweepPage()
-        feature_page = FeaturePage()
-        plot_page = PlotPage()
-
-        # Create tab widget
+        # Create tab widget & set tabs as a central widget
         tab_widget = QTabWidget()
-        tab_widget.insertTab(0, sweep_page, "Sweeps")
-        tab_widget.insertTab(1, feature_page, "Features")
-        tab_widget.insertTab(2, plot_page, "Plots")
-
-        # Set tabs as a central widget
         self.setCentralWidget(tab_widget)
+
+
+    def insert_tabs(self, sweep_page, feature_page, plot_page):
+        self.centralWidget().insertTab(0, sweep_page, "Sweeps")
+        self.centralWidget().insertTab(1, feature_page, "Features")
+        self.centralWidget().insertTab(2, plot_page, "Plots")
 
 
     def create_main_menu_bar(self, pre_fx_controller: PreFxController):
@@ -133,17 +132,27 @@ class Application(object):
     def __init__(self, output_dir):
         self.app_cntxt = ApplicationContext()
 
+        # initialize components
+        self.main_window = MainWindow()
         self.pre_fx_controller: PreFxController = PreFxController()
         self.pre_fx_data: PreFxData = PreFxData()
+        self.sweep_page = SweepPage()
+        self.feature_page = FeaturePage()
+        self.plot_page = PlotPage()
 
-        self.main_window = MainWindow()
-
+        # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
+
+        # connect components
         self.pre_fx_controller.connect(self.pre_fx_data)
+        self.sweep_page.connect_model(self.pre_fx_data)
+        self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
 
+        # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
         self.pre_fx_data.set_default_qc_criteria()
+
 
     def run(self):
         self.main_window.show()
