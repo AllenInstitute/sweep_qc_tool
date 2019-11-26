@@ -38,7 +38,6 @@ class SweepPage(QWidget):
         self.sweep_model = SweepTableModel(self.colnames)
 
         self.sweep_view.setModel(self.sweep_model)
-        self.sweep_view.open_persistent_editor_on_column(self.colnames.index("manual QC state"))
 
         layout = QVBoxLayout()
         layout.addWidget(self.sweep_view)
