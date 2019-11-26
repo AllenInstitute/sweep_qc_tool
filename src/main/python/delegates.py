@@ -62,7 +62,7 @@ class ComboBoxDelegate(QItemDelegate):
 
     def setModelData(self, editor, model, index):
         value = editor.currentText()
-        model.setData(index, QtCore.Qt.DisplayRole, QtCore.QVariant(value))
+        model.setData(index, value, QtCore.Qt.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
