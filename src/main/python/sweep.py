@@ -416,10 +416,7 @@ def experiment_plot_data(
     time = sweep.t[experiment_start_index:]
     voltage = sweep.v[experiment_start_index:]
 
-    voltage_defined = ~np.isnan(voltage)
-
-    time = time[voltage_defined]
-    voltage = voltage[voltage_defined]
+    voltage[np.isnan(voltage)] = 0.0
 
     voltage = filtfilt(bessel_num, bessel_denom, voltage, axis=0)
     baseline_mean = np.nanmean(voltage[baseline_start_index: baseline_end_index])
