@@ -33,6 +33,7 @@ class SweepPlotConfig(NamedTuple):
     experiment_baseline_end_index: int
     experiment_plot_bessel_order: int
     experiment_plot_bessel_critical_frequency: float
+    thumbnail_step: int
 
 
 class SweepTableModel(QAbstractTableModel):
@@ -96,37 +97,15 @@ class SweepTableModel(QAbstractTableModel):
         self.endRemoveRows()
 
         state_lookup = {state["sweep_number"]: state for state in sweep_states}
-        bessel_num, bessel_denom = bessel(
-            self.plot_config.experiment_plot_bessel_order, 
-            self.plot_config.experiment_plot_bessel_critical_frequency, 
-            "low"
-        )
-
-        previous_test_voltage = None
-        initial_test_voltage = None
+        plotter = SweepPlotter(dataset, self.plot_config)
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
         for sweep in sorted(sweep_features, key=lambda swp: swp["sweep_number"]):
+
             sweep_number = sweep["sweep_number"]
             state = state_lookup[sweep_number]
 
-            sweep_data = dataset.sweep(sweep_number)
-            test_time, test_voltage = test_response_plot_data(
-                sweep_data, 
-                self.plot_config.test_plot_duration, 
-                self.plot_config.test_pulse_baseline_samples
-            )
-            exp_time, exp_voltage, exp_baseline = experiment_plot_data(
-                sweep_data, bessel_num, bessel_denom, 
-                self.plot_config.backup_experiment_start_index, 
-                self.plot_config.experiment_baseline_start_index, 
-                self.plot_config.experiment_baseline_end_index
-            )
-
-            test_pulse_plot = make_test_pulse_plot(
-                sweep_number, test_time, test_voltage, previous_test_voltage, initial_test_voltage
-            )
-            experiment_plot = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline)
+            test_pulse_plots, experiment_plots = plotter.advance(sweep_number)
 
             self._data.append([
                 sweep_number,
@@ -135,14 +114,9 @@ class SweepTableModel(QAbstractTableModel):
                 state["passed"] and sweep["passed"], # auto qc
                 manual_qc_states[sweep_number],
                 sweep["tags"] + state["reasons"], # fail tags
-                svg_from_mpl_axes(test_pulse_plot),
-                svg_from_mpl_axes(experiment_plot)
+                test_pulse_plots,
+                experiment_plots
             ])
-
-            if initial_test_voltage is None:
-                initial_test_voltage = test_voltage
-                
-            previous_test_voltage = test_voltage
 
         self.endInsertRows()
 
@@ -251,7 +225,10 @@ class SweepTableView(QTableView):
         self.setItemDelegateForColumn(self.colnames.index("experiment epoch"), self.svg_delegate)
         self.setItemDelegateForColumn(self.colnames.index("manual QC state"), self.cb_delegate)
 
+        self.verticalHeader().setMinimumSectionSize(120)
+
         self.clicked.connect(self.on_clicked)
+
 
     def setModel(self, model: SweepTableModel):
         """ Attach a SweepTableModel to this view. The model will provide data for 
@@ -291,7 +268,7 @@ class SweepTableView(QTableView):
         if not index.column() in {column_map["test epoch"], column_map["experiment epoch"]}:
             return
 
-        data = self.model().data(index)
+        data = self.model().data(index).full
         index_rect = self.visualRect(index)        
         
         popup = QDialog()
@@ -303,6 +280,79 @@ class SweepTableView(QTableView):
         popup.setLayout(layout)
         popup.move(index_rect.left(), index_rect.top())
         popup.exec()
+
+
+class FixedPlots(NamedTuple):
+    thumbnail: QByteArray
+    full: QByteArray
+
+class SweepPlotter:
+
+    @property
+    def bessel_params(self):
+        if self._bessel_params is None:
+            self._bessel_params = bessel(
+                self.config.experiment_plot_bessel_order, 
+                self.config.experiment_plot_bessel_critical_frequency, 
+                "low"
+            )
+        return self._bessel_params
+
+
+    def __init__(self, data_set: EphysDataSet, config: SweepPlotConfig):
+        self.data_set = data_set
+        self.config = config
+        self.previous_test_voltage = None
+        self.initial_test_voltage = None
+        self._bessel_params = None
+
+    def make_test_pulse_plots(self, sweep_number, sweep_data, advance=True):
+
+        time, voltage = test_response_plot_data(
+            sweep_data, 
+            self.config.test_plot_duration, 
+            self.config.test_pulse_baseline_samples
+        )
+
+        full = make_test_pulse_plot(sweep_number, time, voltage, 
+            self.previous_test_voltage, self.initial_test_voltage
+        )
+
+        thumbnail = make_test_pulse_plot(sweep_number, 
+            time, voltage, 
+            self.previous_test_voltage, self.initial_test_voltage, 
+            step=self.config.thumbnail_step, labels=False
+        )
+
+        if advance:
+            if self.initial_test_voltage is None:
+                self.initial_test_voltage = voltage
+                
+            self.previous_test_voltage = voltage
+
+        return FixedPlots(thumbnail=svg_from_mpl_axes(thumbnail), full=svg_from_mpl_axes(full))
+
+    def make_experiment_plots(self, sweep_number, sweep_data):
+
+        exp_time, exp_voltage, exp_baseline = experiment_plot_data(
+            sweep_data, self.bessel_params[0], self.bessel_params[1], 
+            self.config.backup_experiment_start_index, 
+            self.config.experiment_baseline_start_index, 
+            self.config.experiment_baseline_end_index
+        )
+
+        full = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline)
+        thumbnail = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, 
+            step=self.config.thumbnail_step, labels=False
+        )
+        return FixedPlots(thumbnail=svg_from_mpl_axes(thumbnail), full=svg_from_mpl_axes(full))
+
+    def advance(self, sweep_number):
+        sweep_data = self.data_set.sweep(sweep_number)
+        return (
+            self.make_test_pulse_plots(sweep_number, sweep_data), 
+            self.make_experiment_plots(sweep_number, sweep_data)
+        )
 
 
 def svg_from_mpl_axes(fig):
@@ -327,21 +377,25 @@ def test_response_plot_data(sweep, plot_duration=0.1, num_baseline_samples=100):
     )
 
 
-def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=None):
+def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=None, step=1, labels=True):
     
     fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
     if initial is not None:
-        ax.plot(time, initial, linewidth=1, label=f"initial", color="green")
+        ax.plot(time[::step], initial[::step], linewidth=1, label=f"initial", color="green")
         
     if previous is not None:
-        ax.plot(time, previous, linewidth=1, label=f"previous", color="orange")
+        ax.plot(time[::step], previous[::step], linewidth=1, label=f"previous", color="orange")
     
-    ax.plot(time, voltage, linewidth=1, label=f"sweep {sweep_number}", color="blue")
+    ax.plot(time[::step], voltage[::step], linewidth=1, label=f"sweep {sweep_number}", color="blue")
 
-    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
-    ax.legend()
+    if labels:
+        ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+        ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+        ax.legend()
+    else:
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
 
     return fig
 
@@ -360,23 +414,33 @@ def experiment_plot_data(
         experiment_start_index = backup_start_index
     
     time = sweep.t[experiment_start_index:]
-    voltage = filtfilt(bessel_num, bessel_denom, sweep.v[experiment_start_index:], axis=0)
-    baseline_mean = np.mean(voltage[baseline_start_index: baseline_end_index])
-    
+    voltage = sweep.v[experiment_start_index:]
+
+    voltage_defined = ~np.isnan(voltage)
+
+    time = time[voltage_defined]
+    voltage = voltage[voltage_defined]
+
+    voltage = filtfilt(bessel_num, bessel_denom, voltage, axis=0)
+    baseline_mean = np.nanmean(voltage[baseline_start_index: baseline_end_index])
     return time, voltage, baseline_mean
 
 
-def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline):
+def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, step=1, labels=True):
     time_lim = [exp_time[0], exp_time[-1]]
 
     fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
-    ax.plot(exp_time, exp_voltage, linewidth=1, label=f"sweep {sweep_number}")
+    ax.plot(exp_time[::step], exp_voltage[::step], linewidth=1, label=f"sweep {sweep_number}")
     ax.hlines(exp_baseline, *time_lim, linewidth=1, label="baseline")
     ax.set_xlim(time_lim)
 
-    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
-    ax.legend()
+    if labels:
+        ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+        ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+        ax.legend()
+    else:
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
 
     return fig

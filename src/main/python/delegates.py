@@ -21,7 +21,7 @@ class SvgDelegate(QStyledItemDelegate):
             option: QStyleOptionViewItem,
             index: QModelIndex
     ):
-        value = index.data()
+        value = index.data().thumbnail
 
         renderer = QSvgRenderer()
         renderer.load(value)

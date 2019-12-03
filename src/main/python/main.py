@@ -177,7 +177,8 @@ class Application(object):
         test_plot_duration: float, 
         test_pulse_baseline_samples: int,
         experiment_plot_bessel_order: int,
-        experiment_plot_bessel_critical_frequency: float
+        experiment_plot_bessel_critical_frequency: float,
+        thumbnail_step: int
     ):
         self.app_cntxt = ApplicationContext()
 
@@ -188,7 +189,8 @@ class Application(object):
             experiment_baseline_start_index, 
             experiment_baseline_end_index,
             experiment_plot_bessel_order,
-            experiment_plot_bessel_critical_frequency
+            experiment_plot_bessel_critical_frequency,
+            thumbnail_step
         )
 
         # initialize components
@@ -229,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument("--experiment_baseline_start_index", type=int, default=5000,
         help="when plotting experiment pulses, where to start the baseline assessment epoch"
     )
-    parser.add_argument("--experiment_baseline_end_index", type=int, default=5000,
+    parser.add_argument("--experiment_baseline_end_index", type=int, default=9000,
         help="when plotting experiment pulses, where to end the baseline assessment epoch"
     )
     parser.add_argument("--test_plot_duration", type=float, default=0.1,
@@ -243,6 +245,9 @@ if __name__ == '__main__':
     )
     parser.add_argument("--experiment_plot_bessel_critical_frequency", type=float, default=0.1, 
         help="when plotting sweep voltage traces for the experiment epoch a lowpass bessel filter is applied to the trace. This parameter defines the critical frequency of that filter."
+    )
+    parser.add_argument("--thumbnail_step", type=float, default=300, 
+        help="step size for generating decimated thumbnail images for individual sweeps."
     )
     args = parser.parse_args()
 
