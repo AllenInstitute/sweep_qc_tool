@@ -12,6 +12,7 @@ from ipfx.qc_feature_evaluator import qc_experiment, DEFAULT_QC_CRITERIA_FILE
 from ipfx.bin.run_qc import qc_summary
 from ipfx.stimulus import StimulusOntology, Stimulus
 from ipfx.data_set_utils import create_data_set
+from ipfx.sweep_props import drop_tagged_sweeps
 
 from error_handling import exception_message
 from marshmallow import ValidationError
@@ -299,6 +300,7 @@ def extract_qc_features(data_set):
         # manual_values=cell_qc_manual_values
     )
     sweep_features = sweep_qc_features(data_set)
+    drop_tagged_sweeps(sweep_features)
     return cell_features, cell_tags, sweep_features
 
 def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
