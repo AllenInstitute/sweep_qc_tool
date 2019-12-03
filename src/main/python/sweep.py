@@ -389,9 +389,10 @@ def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=Non
     
     ax.plot(time[::step], voltage[::step], linewidth=1, label=f"sweep {sweep_number}", color="blue")
 
+    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+
     if labels:
-        ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-        ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
         ax.legend()
     else:
         ax.xaxis.set_major_locator(plt.NullLocator())
@@ -409,12 +410,12 @@ def experiment_plot_data(
     baseline_end_index: int = 9000
 ):    
 
-    experiment_start_index, _ = get_experiment_epoch(sweep.i, sweep.sampling_rate)
+    experiment_start_index, experiment_end_index = get_experiment_epoch(sweep.i, sweep.sampling_rate)
     if experiment_start_index <= 0:
         experiment_start_index = backup_start_index
     
-    time = sweep.t[experiment_start_index:]
-    voltage = sweep.v[experiment_start_index:]
+    time = sweep.t[experiment_start_index:experiment_end_index]
+    voltage = sweep.v[experiment_start_index:experiment_end_index]
 
     voltage[np.isnan(voltage)] = 0.0
 
@@ -432,9 +433,10 @@ def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, step
     ax.hlines(exp_baseline, *time_lim, linewidth=1, label="baseline")
     ax.set_xlim(time_lim)
 
+    ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+
     if labels:
-        ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-        ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
         ax.legend()
     else:
         ax.xaxis.set_major_locator(plt.NullLocator())
