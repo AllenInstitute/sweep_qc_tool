@@ -390,7 +390,7 @@ def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=Non
     ax.plot(time[::step], voltage[::step], linewidth=1, label=f"sweep {sweep_number}", color="blue")
 
     ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (mV)", fontsize=PLOT_FONTSIZE)
 
     if labels:
         ax.legend()
@@ -434,7 +434,7 @@ def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, step
     ax.set_xlim(time_lim)
 
     ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    ax.set_ylabel("membrane potential (V)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel("membrane potential (mV)", fontsize=PLOT_FONTSIZE)
 
     if labels:
         ax.legend()
