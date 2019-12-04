@@ -13,11 +13,11 @@ from ipfx.bin.run_qc import qc_summary
 from ipfx.stimulus import StimulusOntology, Stimulus
 from ipfx.data_set_utils import create_data_set
 from ipfx.sweep_props import drop_tagged_sweeps
-
+import ipfx.sweep_props as sweep_props
 from error_handling import exception_message
 from marshmallow import ValidationError
+from schemas import PipelineParameters
 
-from schemas import PipelineInput
 
 class PreFxData(QObject):
 
@@ -29,6 +29,8 @@ class PreFxData(QObject):
 
     begin_commit_calculated = pyqtSignal(name="begin_commit_calculated")
     end_commit_calculated = pyqtSignal(list, list, dict, EphysDataSet, name="end_commit_calculated")
+
+    data_changed = pyqtSignal(str, StimulusOntology, list, dict, name = "data_changed")
 
     def __init__(self):
         """ Main data store for all data upstream of feature extraction. This
@@ -236,7 +238,7 @@ class PreFxData(QObject):
         }
 
         try:
-            PipelineInput().load(json_data)
+            PipelineParameters().load(json_data)
             with open(filepath, 'w') as f:
                 json.dump(json_data, f, indent=4)
 
@@ -266,6 +268,8 @@ class PreFxData(QObject):
         )
 
         cell_features, cell_tags, sweep_features = extract_qc_features(data_set)
+
+        sweep_props.drop_tagged_sweeps(sweep_features)
         cell_state, cell_features, sweep_states, sweep_features = run_qc(
             stimulus_ontology, cell_features, sweep_features, qc_criteria
         )
@@ -292,6 +296,29 @@ class PreFxData(QObject):
 
     def on_manual_qc_state_updated(self, sweep_number: int, new_state: str):
         self.manual_qc_states[sweep_number] = new_state
+        self.update_sweep_states()
+        self.data_changed.emit(self.nwb_path,
+                               self.stimulus_ontology,
+                               self.sweep_features,
+                               self.cell_features)
+
+    def get_non_default_manual_sweep_states(self):
+        manual_sweep_states = []
+
+        for k, v in self.manual_qc_states.items():
+            if v not in ["default"]:
+                manual_sweep_states.append(
+                    {"sweep_number": k,
+                     "passed": v == "passed"
+                     }
+                )
+        return manual_sweep_states
+
+    def update_sweep_states(self):
+        manual_sweep_states = self.get_non_default_manual_sweep_states()
+        sweep_states = copy.deepcopy(self.sweep_states)
+        sweep_props.override_auto_sweep_states(manual_sweep_states, sweep_states)
+        sweep_props.assign_sweep_states(sweep_states, self.sweep_features)
 
 
 def extract_qc_features(data_set):
@@ -303,7 +330,11 @@ def extract_qc_features(data_set):
     drop_tagged_sweeps(sweep_features)
     return cell_features, cell_tags, sweep_features
 
+
 def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
+    """Adding qc status to sweep features
+    Outputs qc summary on a screen
+    """
     cell_features = copy.deepcopy(cell_features)
     sweep_features = copy.deepcopy(sweep_features)
 
