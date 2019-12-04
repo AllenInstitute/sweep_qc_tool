@@ -2,5 +2,23 @@
     "app_name": "sweep_qc_tool",
     "author": "Allen Institute for Brain Science",
     "main_module": "src/main/python/main.py",
-    "version": "0.0.0"
+    "version": "0.2.0",
+    "hidden_imports": [
+        "scipy",
+        "scipy.signal",
+        "scipy.signal.windows",
+        "scipy.fftpack",
+        "scipy.fftpack.basic",
+        "scipy._lib",
+        "scipy._build_utils",
+        "scipy.__config__",
+        "scipy.linalg.cython_blas",
+        "scipy.linalg.cython_lapack",
+        "pynwb",
+        "pynwb.base",
+        "hdmf",
+        "hdmf.common",
+        "distutils"
+    ],
+    "additional_hooks_dir": ["pyinstaller_hooks"]
 }
