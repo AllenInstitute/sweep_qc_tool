@@ -20,6 +20,7 @@ build_script:
   - "%VENV_DIR%\\scripts\\activate.bat"
   - python -m pip install -r requirements/base.txt
   - python -m fbs freeze --debug
+  - target\sweep_qc_tool\sweep_qc_tool.exe -h
   - "%VENV_DIR%\\scripts\\deactivate.bat"
 
 artifacts:
