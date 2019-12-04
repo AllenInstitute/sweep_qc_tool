@@ -17,6 +17,7 @@ from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
 from sweep import SweepTableView, SweepTableModel, SweepPlotConfig
 from pre_fx_data import PreFxData
+from fx_data import FxData
 from pre_fx_controller import PreFxController
 
 class SweepPage(QWidget):
@@ -197,6 +198,7 @@ class Application(object):
         self.main_window = MainWindow()
         self.pre_fx_controller: PreFxController = PreFxController()
         self.pre_fx_data: PreFxData = PreFxData()
+        self.fx_data: FxData = FxData()
         self.sweep_page = SweepPage(sweep_plot_config)
         self.feature_page = FeaturePage()
         self.plot_page = PlotPage()
@@ -209,6 +211,7 @@ class Application(object):
         self.sweep_page.connect(self.pre_fx_data)
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
+        self.fx_data.connect(self.pre_fx_data)
 
         # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
