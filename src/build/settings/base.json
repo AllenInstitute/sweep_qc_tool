@@ -17,8 +17,7 @@
         "pynwb",
         "pynwb.base",
         "hdmf",
-        "hdmf.common",
-        "distutils"
+        "hdmf.common"
     ],
     "additional_hooks_dir": ["pyinstaller_hooks"]
 }
