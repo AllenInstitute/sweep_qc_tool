@@ -5,7 +5,7 @@ import opcode
 def pre_find_module_path(pfmp_api):
     """ When freezing from virtualenv, pyinstaller finds the virtualenv version of 
     distutils, which is not suitable for use outside of a virtualenv. This causes the
-    system virtualenv to be found instead.
+    system distutils to be found instead.
 
     See https://github.com/pyinstaller/pyinstaller/issues/4064 for more information and several 
     viable solutions.
