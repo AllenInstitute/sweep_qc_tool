@@ -15,11 +15,10 @@ def pre_find_module_path(pfmp_api):
     # https://github.com/pypa/virtualenv/blob/591282f224d5d128f4452a319e0ed9a3bcb058c1/virtualenv_embedded/distutils-init.py#L5
     # we can use a non-virtualenv module (opcode) to find the system distutils
     system_distutils_path = os.path.normpath(
-        os.path.join(
-            os.path.dirname(opcode.__file__), 
-            "distutils"
-        )
+        os.path.dirname(opcode.__file__)
     )
 
     # Then we tell the pre-find-module-path api to look there first
     pfmp_api.search_dirs = [system_distutils_path] + pfmp_api.search_dirs
+
+    print("searching:\n", pfmp_api.search_dirs)
