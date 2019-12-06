@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import pyqtSignal
 
 from pre_fx_data import PreFxData
-
+from fx_data import FxData
 
 class PreFxController(QWidget):
 
@@ -22,6 +22,7 @@ class PreFxController(QWidget):
     selected_qc_criteria_path = pyqtSignal(str, name="selected_qc_criteria_path")
     selected_data_set_path = pyqtSignal(str, name="selected_data_set_path")
     selected_manual_states_path = pyqtSignal(str, name="selected_manual_states_path")
+
 
     def __init__(self, *args, **kwargs):
         """PreFxController provides an interface between GUI elements, such as 
@@ -73,12 +74,13 @@ class PreFxController(QWidget):
         self.export_manual_states_to_json_action = QAction("Export manual states to JSON", self)
         self.export_manual_states_to_json_action.triggered.connect(self.export_manual_states_to_json_dialog)
 
+        self.run_feature_extraction_action = QAction("Run feature extraction", self)
 
         self.on_stimulus_ontology_unset()
         self.on_qc_criteria_unset()
         self.on_data_set_unset()
 
-    def connect(self, pre_fx_data: PreFxData):
+    def connect(self, pre_fx_data: PreFxData, fx_data: FxData):
         """ Sets up communication between this controller and a PreFxData 
         instance. This object sends signals describing user inputs, while the 
         PreFxData sends signals reporting the status of its data and 
@@ -96,6 +98,9 @@ class PreFxController(QWidget):
         self.selected_qc_criteria_path.connect(pre_fx_data.load_qc_criteria_from_json)
         self.selected_data_set_path.connect(pre_fx_data.load_data_set_from_nwb)
         self.selected_manual_states_path.connect(pre_fx_data.save_manual_states_to_json)
+
+        self.run_feature_extraction_action.triggered.connect(fx_data.run_feature_extraction)
+
 
         # data -> controller
         pre_fx_data.stimulus_ontology_set.connect(self.on_stimulus_ontology_set)
@@ -137,11 +142,13 @@ class PreFxController(QWidget):
         """ Triggered when the PreFxData's data set becomes not None
         """
         self._has_data_set = True
+        self.run_feature_extraction_action.setEnabled(True)
 
     def on_data_set_unset(self):
         """ Triggered when the PreFxData's data set becomes None
         """
         self._has_data_set = False
+        self.run_feature_extraction_action.setEnabled(False)
 
     def load_stimulus_ontology_dialog(self):
         """ Prompts the user to select a JSON file containing a serialized ipfx 

@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
 
         self.main_menu_bar = self.menuBar()
         self.file_menu = self.main_menu_bar.addMenu("File")
-        self.main_menu_bar.addMenu("Edit")
+        self.edit_menu = self.main_menu_bar.addMenu("Edit")
         self.settings_menu = self.main_menu_bar.addMenu("Settings")
         self.main_menu_bar.addMenu("Help")
 
@@ -165,6 +165,10 @@ class MainWindow(QMainWindow):
 
         self.settings_menu.addAction(pre_fx_controller.show_stimulus_ontology_action)
         self.settings_menu.addAction(pre_fx_controller.show_qc_criteria_action)
+
+        self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
+
+
 
 
 class Application(object):
@@ -207,7 +211,7 @@ class Application(object):
         self.pre_fx_controller.set_output_path(output_dir)
 
         # connect components
-        self.pre_fx_controller.connect(self.pre_fx_data)
+        self.pre_fx_controller.connect(self.pre_fx_data, self.fx_data)
         self.sweep_page.connect(self.pre_fx_data)
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
