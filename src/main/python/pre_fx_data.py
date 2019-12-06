@@ -296,6 +296,13 @@ class PreFxData(QObject):
                 self.sweep_features, self.sweep_states, self.manual_qc_states, self.data_set
             )
 
+        self.data_changed.emit(self.nwb_path,
+                               self.stimulus_ontology,
+                               self.sweep_features,
+                               self.cell_features)
+
+
+
     def on_manual_qc_state_updated(self, sweep_number: int, new_state: str):
         self.manual_qc_states[sweep_number] = new_state
         self.update_sweep_states()
