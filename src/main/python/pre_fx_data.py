@@ -30,7 +30,9 @@ class PreFxData(QObject):
     begin_commit_calculated = pyqtSignal(name="begin_commit_calculated")
     end_commit_calculated = pyqtSignal(list, list, dict, EphysDataSet, name="end_commit_calculated")
 
-    data_changed = pyqtSignal(str, StimulusOntology, list, dict, name = "data_changed")
+    data_changed = pyqtSignal(str, StimulusOntology, list, dict, name="data_changed")
+
+    status_message = pyqtSignal(str, name="status_message")
 
     def __init__(self):
         """ Main data store for all data upstream of feature extraction. This
@@ -198,15 +200,15 @@ class PreFxData(QObject):
             load dataset from here
 
         """
-
         try:
             if self.stimulus_ontology is None:
                 raise ValueError("must set stimulus ontology before loading a data set!")
             elif self.qc_criteria is None:
                 raise ValueError("must set qc criteria before loading a data set!")
-            
-            self.run_extraction_and_auto_qc(path, self.stimulus_ontology, self.qc_criteria, commit=True)
 
+            self.status_message.emit("Running extraction and auto qc...")
+            self.run_extraction_and_auto_qc(path, self.stimulus_ontology, self.qc_criteria, commit=True)
+            self.status_message.emit("Done running extraction and auto qc")
         except Exception as err:
             exception_message(
                 "Unable to load NWB",

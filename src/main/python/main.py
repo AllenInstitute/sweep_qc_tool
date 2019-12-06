@@ -130,7 +130,6 @@ class MainWindow(QMainWindow):
         self.centralWidget().insertTab(1, feature_page, "Features")
         self.centralWidget().insertTab(2, plot_page, "Plots")
 
-
     def create_main_menu_bar(self, pre_fx_controller: PreFxController):
         """ Set up the main application menu.
 
@@ -206,7 +205,7 @@ class Application(object):
         self.sweep_page = SweepPage(sweep_plot_config)
         self.feature_page = FeaturePage()
         self.plot_page = PlotPage()
-
+        self.status_bar = self.main_window.statusBar()
         # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
 
@@ -216,6 +215,11 @@ class Application(object):
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
         self.fx_data.connect(self.pre_fx_data)
+
+        self.fx_data.status_message.connect(self.status_bar.showMessage)
+        self.fx_data.status_message.connect(self.status_bar.repaint)
+        self.pre_fx_data.status_message.connect(self.status_bar.showMessage)
+        self.pre_fx_data.status_message.connect(self.status_bar.repaint)
 
         # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
