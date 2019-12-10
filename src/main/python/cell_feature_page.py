@@ -184,7 +184,7 @@ def get_feature(data: Dict, *path: Any) -> str:
     return format_feature(data)
     
 
-def format_feature(feature, float_figures=4):
+def format_feature(feature, float_figures=4) -> str:
     """ Ensure that numpy and python values are formatted consistently
     """
 
