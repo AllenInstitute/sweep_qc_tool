@@ -51,7 +51,6 @@ class SweepTableModel(QAbstractTableModel):
         self._data = []
 
         self.plot_config = plot_config
-
     
     def connect(self, data: PreFxData):
         """ Set up signals and slots for communication with the underlying data store.
@@ -111,9 +110,9 @@ class SweepTableModel(QAbstractTableModel):
                 sweep_number,
                 sweep["stimulus_code"],
                 sweep["stimulus_name"],
-                state["passed"] and sweep["passed"], # auto qc
+                "passed" if state["passed"] and sweep["passed"] else "failed", # auto qc
                 manual_qc_states[sweep_number],
-                sweep["tags"] + state["reasons"], # fail tags
+                format_fail_tags(sweep["tags"] + state["reasons"] + ["ajdghaoprughughrwi", "gaugworbwv"]), # fail tags
                 test_pulse_plots,
                 experiment_plots
             ])
@@ -211,6 +210,9 @@ class SweepTableModel(QAbstractTableModel):
 
         return False
 
+def format_fail_tags(tags: List[str]) -> str:
+    return "\n\n".join(tags)
+
 
 class SweepTableView(QTableView):
 
@@ -229,6 +231,8 @@ class SweepTableView(QTableView):
 
         self.clicked.connect(self.on_clicked)
 
+        self.setWordWrap(True)
+
 
     def setModel(self, model: SweepTableModel):
         """ Attach a SweepTableModel to this view. The model will provide data for 
@@ -236,6 +240,22 @@ class SweepTableView(QTableView):
         """
         super(SweepTableView, self).setModel(model)
         model.rowsInserted.connect(self.persist_qc_editor)
+        model.rowsInserted.connect(self.resize_to_content)
+
+    def resize_to_content(self, *args, **kwargs):
+        """ This function just exists so that we can connect signals with 
+        extraneous data to resizeRowsToContents
+        """
+
+        self.resizeRowsToContents()
+
+    def resizeEvent(self, *args, **kwargs):
+        """ Makes sure that we resize the rows to their contents when the user
+        resizes the window
+        """
+
+        super(SweepTableView, self).resizeEvent(*args, **kwargs)
+        self.resize_to_content()
 
     def persist_qc_editor(self, *args, **kwargs):
         """ Ensure that the QC state editor can be opened with a single click.
@@ -250,6 +270,7 @@ class SweepTableView(QTableView):
 
         for row in range(self.model().rowCount()):
             self.openPersistentEditor(self.model().index(row, column))
+
 
     def on_clicked(self, index: QModelIndex):
         """ When plot thumbnails are clicked, open a larger plot in a popup.
@@ -280,7 +301,6 @@ class SweepTableView(QTableView):
         popup.setLayout(layout)
         popup.move(index_rect.left(), index_rect.top())
         popup.exec()
-
 
 class FixedPlots(NamedTuple):
     thumbnail: QByteArray
