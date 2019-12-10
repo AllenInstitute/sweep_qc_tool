@@ -19,6 +19,7 @@ from sweep import SweepTableView, SweepTableModel, SweepPlotConfig
 from pre_fx_data import PreFxData
 from fx_data import FxData
 from pre_fx_controller import PreFxController
+from cell_features import FeaturePage
 
 class SweepPage(QWidget):
 
@@ -64,17 +65,6 @@ class SweepPage(QWidget):
 
         self.sweep_model.connect(data)
 
-
-class FeaturePage(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        cell_features_table = QTableView()
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        layout.addWidget(cell_features_table)
 
 class PlotPage(QWidget):
     def __init__(self):
@@ -215,6 +205,7 @@ class Application(object):
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
         self.main_window.create_main_menu_bar(self.pre_fx_controller)
         self.fx_data.connect(self.pre_fx_data)
+        self.feature_page.connect(self.fx_data)
 
         self.fx_data.status_message.connect(self.status_bar.showMessage)
         self.fx_data.status_message.connect(self.status_bar.repaint)

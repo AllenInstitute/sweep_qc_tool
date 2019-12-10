@@ -7,11 +7,24 @@ from error_handling import exception_message
 
 class FxData(QObject):
 
+    state_outdated = pyqtSignal(name="state_outdated")
+    new_state_set = pyqtSignal(dict, name="new_state_set")
+
     status_message = pyqtSignal(str, name="status_message")
 
     def __init__(self):
         super().__init__()
         self._state_out_of_date: bool = False
+
+    def out_of_date(self):
+        self.state_outdated.emit()
+        self._state_out_of_date = True
+
+    
+    def new_state(self):
+        self.new_state_set.emit(self.feature_data)
+        self._state_out_of_date = False
+
 
     def set_fx_parameters(self,
                           nwb_path,
@@ -20,7 +33,7 @@ class FxData(QObject):
                           cell_info,
                           ):
 
-        self._state_out_of_date = True
+        self.out_of_date()
         self.input_nwb_file = nwb_path
         self.ontology = ontology
         self.sweep_info = sweep_info
@@ -48,7 +61,7 @@ class FxData(QObject):
                                  'cell_state': cell_state
                                 }
 
-            self._state_out_of_date = False
+            self.new_state()
             self.status_message.emit("Done computing features!")
 
         except (FeatureError, IndexError) as ferr:
