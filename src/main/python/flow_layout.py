@@ -96,6 +96,7 @@ class FlowLayout(QLayout):
         line_height: int = 0
 
         for item in self.items:
+
             widget = item.widget()
             horizontal_space = self.horizontalSpacing()
             vertical_space = self.verticalSpacing()
