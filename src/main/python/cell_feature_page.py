@@ -24,7 +24,6 @@ def default_keys() -> KeysType:
             "electrode_0_pa",
             "f_i_curve_slope",
             "rheobase_sweep_num",
-            "ri",
             "sag",
             "seal_gohm",
             "tau",
@@ -36,6 +35,7 @@ def default_keys() -> KeysType:
             "initial_access_resistance_mohm",
             "input_access_resistance_ratio",
             "input_resistance_mohm",
+            "ri",
         ],
         "ramp": [
             "upstroke_downstroke_ratio_ramp",
@@ -65,7 +65,7 @@ def default_keys() -> KeysType:
             "peak_t_short_square",
             "peak_v_short_square",
         ],
-        "fast_trough": [
+        "long_square": [
             "upstroke_downstroke_ratio_long_square",
             "fast_trough_t_long_square",
             "fast_trough_v_long_square",
