@@ -1,8 +1,29 @@
 import pytest
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import QSize, QRect
 
 from flow_layout import FlowLayout
+
+
+class RectangularItem:
+    def __init__(self, minsize: int):
+        self.minsize = QSize(minsize + 2, minsize)
+
+    def minimumSize(self):
+        return self.minsize
+
+
+class SquareWidget(QWidget):
+    def __init__(self, size: int):
+        super(SquareWidget, self).__init__()
+        self.size = QSize(size, size)
+
+    def sizeHint(self):
+        return self.size
+
+    def widget(self):
+        return "foo"
 
 
 @pytest.fixture
@@ -30,15 +51,18 @@ def test_take_at(layout):
     assert layout.count() == 0
 
 def test_minimum_size(layout):
-    class SquareItem:
-        def __init__(self, minsize: int):
-            self.minsize = QSize(minsize, minsize)
-        def minimumSize(self):
-            return self.minsize
-
-    layout.addItem(SquareItem(4))
-    layout.addItem(SquareItem(8))
-    assert QSize(32, 32) == layout.minimumSize()
+    layout.addItem(RectangularItem(4))
+    layout.addItem(RectangularItem(8))
+    assert QSize(34, 32) == layout.minimumSize()
 
 def test_do_layout(layout):
-    raise NotImplementedError()
+    first = SquareWidget(20)
+    second = SquareWidget(30)
+
+    layout.addItem(first)
+    layout.addItem(second)
+
+    layout.doLayout(QRect(0, 0, 50, 1000), False)
+
+    assert first.geometry() == QRect(12, 12, 20, 20)
+    assert second.geometry() == QRect(12, 68, 30, 30) # next row
