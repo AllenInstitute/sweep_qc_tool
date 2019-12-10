@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import (
     QAbstractTableModel, QModelIndex, QByteArray, pyqtSignal
 )
+from PyQt5.QtGui import QColor
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5 import QtCore
 
@@ -39,6 +40,8 @@ class SweepPlotConfig(NamedTuple):
 class SweepTableModel(QAbstractTableModel):
 
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
+
+    FAIL_BGCOLOR = QColor(255, 225, 225)
 
     def __init__(
         self, 
@@ -112,7 +115,7 @@ class SweepTableModel(QAbstractTableModel):
                 sweep["stimulus_name"],
                 "passed" if state["passed"] and sweep["passed"] else "failed", # auto qc
                 manual_qc_states[sweep_number],
-                format_fail_tags(sweep["tags"] + state["reasons"] + ["ajdghaoprughughrwi", "gaugworbwv"]), # fail tags
+                format_fail_tags(sweep["tags"] + state["reasons"]), # fail tags
                 test_pulse_plots,
                 experiment_plots
             ])
@@ -158,6 +161,12 @@ class SweepTableModel(QAbstractTableModel):
 
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             return self._data[index.row()][index.column()]
+        
+        if role == QtCore.Qt.BackgroundRole and index.column() == 3:
+            if self._data[index.row()][3] == "failed":
+                return self.FAIL_BGCOLOR
+
+
 
 
     def headerData(
