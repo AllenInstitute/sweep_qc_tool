@@ -19,7 +19,7 @@ from sweep import SweepTableView, SweepTableModel, SweepPlotConfig
 from pre_fx_data import PreFxData
 from fx_data import FxData
 from pre_fx_controller import PreFxController
-from cell_features import FeaturePage
+from cell_feature_page import CellFeaturePage
 
 class SweepPage(QWidget):
 
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
     def insert_tabs(
         self, 
         sweep_page: SweepPage, 
-        feature_page: FeaturePage, 
+        feature_page: CellFeaturePage, 
         plot_page: PlotPage
     ):
         """ Setup tabs for this window's central viewport.
@@ -193,7 +193,7 @@ class Application(object):
         self.pre_fx_data: PreFxData = PreFxData()
         self.fx_data: FxData = FxData()
         self.sweep_page = SweepPage(sweep_plot_config)
-        self.feature_page = FeaturePage()
+        self.feature_page = CellFeaturePage()
         self.plot_page = PlotPage()
         self.status_bar = self.main_window.statusBar()
         # set cmdline params
