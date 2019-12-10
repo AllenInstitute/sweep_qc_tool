@@ -44,6 +44,7 @@ class ComboBoxDelegate(QItemDelegate):
     def createEditor(self, parent, option, index):
         self.editor = QComboBox(parent)
         self.editor.addItems(self.items)
+        self.editor.activated.connect(self.onActivated)
         return self.editor
 
     def paint(self, painter, option, index):
@@ -55,14 +56,24 @@ class ComboBoxDelegate(QItemDelegate):
         style.drawComplexControl(QStyle.CC_ComboBox, opt, painter)
         QItemDelegate.paint(self, painter, option, index)
 
+    def onActivated(self, index):
+        print(f" received index change {index} ")
+        self.editor.setCurrentIndex(index)
+        print(f" current text {self.editor.currentText()} and index {self.editor.currentIndex()}")
+
+        self.commitData.emit(self.editor)   # this does not help because index was not updated inside editor
+        self.closeEditor.emit(self.editor)
+
     def setEditorData(self, editor, index):
         value = index.data(QtCore.Qt.DisplayRole)
         num = self.items.index(value)
         editor.setCurrentIndex(num)
 
+
     def setModelData(self, editor, model, index):
         value = editor.currentText()
         model.setData(index, value, QtCore.Qt.EditRole)
+        print(f"model data changed: {index.data()} {value}")
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
