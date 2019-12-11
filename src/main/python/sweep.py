@@ -1,5 +1,5 @@
 import io
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Any
 
 from PyQt5.QtWidgets import (
    QTableView, QDialog, QGridLayout
@@ -51,7 +51,7 @@ class SweepTableModel(QAbstractTableModel):
         super().__init__()
         self.colnames = colnames
         self.column_map = {colname: idx for idx, colname in enumerate(colnames)}
-        self._data = []
+        self._data: List[List[Any]] = []
 
         self.plot_config = plot_config
     
@@ -156,6 +156,8 @@ class SweepTableModel(QAbstractTableModel):
 
         """
 
+        print(index.row(), index.column(), index.isValid(), self._data[index.row()][3], role)
+
         if not index.isValid():
             return
 
@@ -163,10 +165,9 @@ class SweepTableModel(QAbstractTableModel):
             return self._data[index.row()][index.column()]
         
         if role == QtCore.Qt.BackgroundRole and index.column() == 3:
+            print("foo", QtCore.Qt.BackgroundRole)
             if self._data[index.row()][3] == "failed":
                 return self.FAIL_BGCOLOR
-
-
 
 
     def headerData(
