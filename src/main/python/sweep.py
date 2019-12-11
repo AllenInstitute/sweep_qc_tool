@@ -156,8 +156,6 @@ class SweepTableModel(QAbstractTableModel):
 
         """
 
-        print(index.row(), index.column(), index.isValid(), self._data[index.row()][3], role)
-
         if not index.isValid():
             return
 
@@ -165,7 +163,6 @@ class SweepTableModel(QAbstractTableModel):
             return self._data[index.row()][index.column()]
         
         if role == QtCore.Qt.BackgroundRole and index.column() == 3:
-            print("foo", QtCore.Qt.BackgroundRole)
             if self._data[index.row()][3] == "failed":
                 return self.FAIL_BGCOLOR
 
