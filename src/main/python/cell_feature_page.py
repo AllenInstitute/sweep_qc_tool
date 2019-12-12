@@ -127,7 +127,6 @@ class CellFeaturePage(QWidget):
         self.get_keys = get_keys
 
     def connect(self, fx_data: FxData):
-        fx_data.state_outdated.connect(self.clear)
         fx_data.new_state_set.connect(self.on_new_data)
 
     def clear(self):

@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (
     QTableView, QGraphicsView,
     QHeaderView,
     QVBoxLayout, QHBoxLayout,
-    QFileDialog
+    QFileDialog,
+    QLabel, QFrame
 )
 from PyQt5.QtCore import pyqtSignal
 from pyqtgraph import GraphicsLayoutWidget
@@ -158,7 +159,25 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
 
 
+    def setup_status_bar(self, pre_fx_data: PreFxData, fx_data: FxData):
+        """ Sets up a status bar, which reports the current state of the app. 
+        Connects this status bar to the underlying models
+        """
 
+        fx_status = QLabel(self)
+        fx_status.setText("<font color='red'>cell features are outdated</font>")
+        fx_status.hide()
+
+        status_bar = self.statusBar()
+        status_bar.addPermanentWidget(fx_status)
+
+        pre_fx_data.status_message.connect(status_bar.showMessage)
+        pre_fx_data.status_message.connect(status_bar.repaint)
+
+        fx_data.status_message.connect(status_bar.showMessage)
+        fx_data.status_message.connect(status_bar.repaint)
+        fx_data.state_outdated.connect(fx_status.show)
+        fx_data.new_state_set.connect(fx_status.hide)
 
 class Application(object):
 
@@ -198,7 +217,7 @@ class Application(object):
         self.status_bar = self.main_window.statusBar()
         # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
-
+        
         # connect components
         self.pre_fx_controller.connect(self.pre_fx_data, self.fx_data)
         self.sweep_page.connect(self.pre_fx_data)
@@ -207,10 +226,7 @@ class Application(object):
         self.fx_data.connect(self.pre_fx_data)
         self.feature_page.connect(self.fx_data)
 
-        self.fx_data.status_message.connect(self.status_bar.showMessage)
-        self.fx_data.status_message.connect(self.status_bar.repaint)
-        self.pre_fx_data.status_message.connect(self.status_bar.showMessage)
-        self.pre_fx_data.status_message.connect(self.status_bar.repaint)
+        self.main_window.setup_status_bar(self.pre_fx_data, self.fx_data)
 
         # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
@@ -248,7 +264,7 @@ if __name__ == '__main__':
     parser.add_argument("--experiment_plot_bessel_critical_frequency", type=float, default=0.1, 
         help="when plotting sweep voltage traces for the experiment epoch a lowpass bessel filter is applied to the trace. This parameter defines the critical frequency of that filter."
     )
-    parser.add_argument("--thumbnail_step", type=float, default=300, 
+    parser.add_argument("--thumbnail_step", type=float, default=50, 
         help="step size for generating decimated thumbnail images for individual sweeps."
     )
     args = parser.parse_args()

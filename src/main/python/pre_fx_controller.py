@@ -111,6 +111,22 @@ class PreFxController(QWidget):
 
         pre_fx_data.end_commit_calculated.connect(self.on_data_set_set)
 
+        fx_data.state_outdated.connect(self.on_fx_results_outdated)
+        fx_data.new_state_set.connect(self.on_new_fx_results)
+
+    def on_fx_results_outdated(self):
+        """ Triggered when the cell feature extraction results are not up-to-date
+        """
+
+        self.export_manual_states_to_json_action.setEnabled(False)
+
+    def on_new_fx_results(self):
+        """ Triggered when new, up-to-date feature extraction results become 
+        available
+        """
+
+        self.export_manual_states_to_json_action.setEnabled(True)
+
     def on_stimulus_ontology_set(self, ontology):
         """ Triggered when the PreFxData's stimulus_ontology becomes not None
         """
