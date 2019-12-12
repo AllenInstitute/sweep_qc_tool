@@ -36,6 +36,7 @@ class PreFxController(QWidget):
         self._stimulus_ontology: Optional[Dict] = None
         self._qc_criteria: Optional[Dict] = None
         self._has_data_set: bool = False
+        self._fx_outdated: bool = True
 
         self.init_actions()
 
@@ -126,14 +127,14 @@ class PreFxController(QWidget):
         """ Triggered when the cell feature extraction results are not up-to-date
         """
 
-        self.export_manual_states_to_json_action.setEnabled(False)
+        self._fx_outdated = True
 
     def on_new_fx_results(self):
         """ Triggered when new, up-to-date feature extraction results become 
         available
         """
 
-        self.export_manual_states_to_json_action.setEnabled(True)
+        self._fx_outdated = False
 
     def on_stimulus_ontology_set(self, ontology):
         """ Triggered when the PreFxData's stimulus_ontology becomes not None
@@ -167,12 +168,14 @@ class PreFxController(QWidget):
         """
         self._has_data_set = True
         self.run_feature_extraction_action.setEnabled(True)
+        self.export_manual_states_to_json_action.setEnabled(True)
 
     def on_data_set_unset(self):
         """ Triggered when the PreFxData's data set becomes None
         """
         self._has_data_set = False
         self.run_feature_extraction_action.setEnabled(False)
+        self.export_manual_states_to_json_action.setEnabled(False)
 
     def export_manual_states_to_lims_dialog(self):
         raise NotImplementedError("lims integration not set up")
@@ -264,6 +267,14 @@ class PreFxController(QWidget):
         """Prompt the user to select the JSON file for saving manual qc states
         as well as provenance information
         """
+
+        if self._fx_outdated:
+            if QMessageBox.question(
+                self, 
+                "features out of date", 
+                "Your cell features are out of date. Proceed?\n\n To update cell features, choose Edit -> run feature extraction"
+            ) == QMessageBox.No:
+                return
 
         path, _ = QFileDialog.getSaveFileName(
             self, "export to JSON file", self.output_path, "All Files (*);;JSON files (*.json)"
