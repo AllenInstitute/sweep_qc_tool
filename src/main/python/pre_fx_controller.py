@@ -65,6 +65,10 @@ class PreFxController(QWidget):
         self.load_data_set_action = QAction("Load data set from NWB file", self)
         self.load_data_set_action.triggered.connect(self.load_data_set_dialog)
 
+        self.load_data_set_lims_action = QAction("Load data set from LIMS", self)
+        self.load_data_set_lims_action.triggered.connect(self.load_data_set_from_lims_dialog)
+        self.load_data_set_lims_action.setEnabled(False)
+
         self.show_qc_criteria_action = QAction("Display QC criteria", self)
         self.show_qc_criteria_action.triggered.connect(self.show_qc_criteria)
 
@@ -73,6 +77,11 @@ class PreFxController(QWidget):
 
         self.export_manual_states_to_json_action = QAction("Export manual states to JSON", self)
         self.export_manual_states_to_json_action.triggered.connect(self.export_manual_states_to_json_dialog)
+        self.export_manual_states_to_json_action.setEnabled(False)
+
+        self.export_manual_states_to_lims_action = QAction("Export manual states to LIMS", self)
+        self.export_manual_states_to_lims_action.triggered.connect(self.export_manual_states_to_lims_dialog)
+        self.export_manual_states_to_lims_action.setEnabled(False)
 
         self.run_feature_extraction_action = QAction("Run feature extraction", self)
 
@@ -100,7 +109,6 @@ class PreFxController(QWidget):
         self.selected_manual_states_path.connect(pre_fx_data.save_manual_states_to_json)
 
         self.run_feature_extraction_action.triggered.connect(fx_data.run_feature_extraction)
-
 
         # data -> controller
         pre_fx_data.stimulus_ontology_set.connect(self.on_stimulus_ontology_set)
@@ -165,6 +173,12 @@ class PreFxController(QWidget):
         """
         self._has_data_set = False
         self.run_feature_extraction_action.setEnabled(False)
+
+    def export_manual_states_to_lims_dialog(self):
+        raise NotImplementedError("lims integration not set up")
+
+    def load_data_set_from_lims_dialog(self):
+        raise NotImplementedError("lims integration not set up")
 
     def load_stimulus_ontology_dialog(self):
         """ Prompts the user to select a JSON file containing a serialized ipfx 
@@ -255,7 +269,8 @@ class PreFxController(QWidget):
             self, "export to JSON file", self.output_path, "All Files (*);;JSON files (*.json)"
         )
 
-        self.selected_manual_states_path.emit(path)
+        if path != "":
+            self.selected_manual_states_path.emit(path)
 
     def show_stimulus_ontology(self):
         simple_ro_text_dialog(
