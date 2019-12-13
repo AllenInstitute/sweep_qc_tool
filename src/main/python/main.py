@@ -187,23 +187,25 @@ class Application(object):
         backup_experiment_start_index: int, 
         experiment_baseline_start_index: int, 
         experiment_baseline_end_index: int, 
-        test_plot_duration: float, 
+        test_pulse_plot_end: float, 
         test_pulse_baseline_samples: int,
         experiment_plot_bessel_order: int,
         experiment_plot_bessel_critical_frequency: float,
-        thumbnail_step: int
+        thumbnail_step: int,
+        test_pulse_plot_start: float
     ):
         self.app_cntxt = ApplicationContext()
 
         sweep_plot_config = SweepPlotConfig(
-            test_plot_duration,
+            test_pulse_plot_end,
             test_pulse_baseline_samples,
             backup_experiment_start_index,
             experiment_baseline_start_index, 
             experiment_baseline_end_index,
             experiment_plot_bessel_order,
             experiment_plot_bessel_critical_frequency,
-            thumbnail_step
+            thumbnail_step,
+            test_pulse_plot_start
         )
 
         # initialize components
@@ -252,8 +254,8 @@ if __name__ == '__main__':
     parser.add_argument("--experiment_baseline_end_index", type=int, default=9000,
         help="when plotting experiment pulses, where to end the baseline assessment epoch"
     )
-    parser.add_argument("--test_plot_duration", type=float, default=0.1,
-        help="in seconds, the amount of time to use as the test pulse plot's domain"
+    parser.add_argument("--test_pulse_plot_end", type=float, default=0.1,
+        help="in seconds, the end time of the test pulse plot's domain"
     )
     parser.add_argument("--test_pulse_baseline_samples", type=int, default=100,
         help="when plotting test pulses, how many samples to use for baseline assessment"
@@ -264,8 +266,11 @@ if __name__ == '__main__':
     parser.add_argument("--experiment_plot_bessel_critical_frequency", type=float, default=0.1, 
         help="when plotting sweep voltage traces for the experiment epoch a lowpass bessel filter is applied to the trace. This parameter defines the critical frequency of that filter."
     )
-    parser.add_argument("--thumbnail_step", type=float, default=50, 
+    parser.add_argument("--thumbnail_step", type=float, default=20, 
         help="step size for generating decimated thumbnail images for individual sweeps."
+    )
+    parser.add_argument("--test_pulse_plot_start", type=float, default=0.04,
+        help="where in time (s) to start the test pulse plot"
     )
     args = parser.parse_args()
 

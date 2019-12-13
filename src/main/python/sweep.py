@@ -1,5 +1,5 @@
 import io
-from typing import Dict, List, NamedTuple, Any
+from typing import Dict, List, NamedTuple, Any, Tuple
 
 from PyQt5.QtWidgets import (
    QTableView, QDialog, QGridLayout
@@ -17,6 +17,7 @@ from scipy.signal import bessel, filtfilt
 
 from ipfx.epochs import get_experiment_epoch
 from ipfx.ephys_data_set import EphysDataSet
+from ipfx.sweep import Sweep
 
 from delegates import (SvgDelegate, ComboBoxDelegate)
 from pre_fx_data import PreFxData
@@ -27,7 +28,7 @@ DEFAULT_FIGSIZE = (8, 8)
 
 
 class SweepPlotConfig(NamedTuple):
-    test_plot_duration: float
+    test_pulse_plot_end: float
     test_pulse_baseline_samples: int
     backup_experiment_start_index: int
     experiment_baseline_start_index: int
@@ -35,6 +36,7 @@ class SweepPlotConfig(NamedTuple):
     experiment_plot_bessel_order: int
     experiment_plot_bessel_critical_frequency: float
     thumbnail_step: int
+    test_pulse_plot_start: float
 
 
 class SweepTableModel(QAbstractTableModel):
@@ -337,7 +339,8 @@ class SweepPlotter:
 
         time, voltage = test_response_plot_data(
             sweep_data, 
-            self.config.test_plot_duration, 
+            self.config.test_pulse_plot_start,
+            self.config.test_pulse_plot_end, 
             self.config.test_pulse_baseline_samples
         )
 
@@ -393,14 +396,42 @@ def svg_from_mpl_axes(fig):
     return QByteArray(data.getvalue())
 
 
-def test_response_plot_data(sweep, plot_duration=0.1, num_baseline_samples=100):
+def test_response_plot_data(
+    sweep: Sweep, 
+    test_pulse_plot_start: float = 0.0,
+    test_pulse_plot_end: float = 0.1, 
+    num_baseline_samples: int = 100
+) -> Tuple[np.ndarray, np.ndarray]:
+    """ Generate time and voltage arrays for the test pulse plots.
 
-    timestep = sweep.t[1] - sweep.t[0]
-    num_samples = int(plot_duration / timestep)
+    Parameters
+    ----------
+    sweep :
+        data source for one sweep
+    test_pulse_plot_start :
+        The start point of the plot (s)
+    test_pulse_plot_end :
+        The endpoint of the plot (s)
+    num_baseline_samples :
+        How many samples (from time 0) to use when calculating the baseline 
+        mean.
+
+    Returns
+    -------
+    time :
+        timestamps of voltage samples (s)
+    voltage :
+        baseline-subtracted voltages (mV)
+    """
+
+    start_index, end_index = (
+        np.searchsorted(sweep.t, [test_pulse_plot_start, test_pulse_plot_end])
+        .astype(int)
+    )
 
     return (
-        sweep.t[0: num_samples], 
-        sweep.v[0: num_samples] - np.mean(sweep.v[0: num_baseline_samples])
+        sweep.t[start_index: end_index], 
+        sweep.v[start_index: end_index] - np.mean(sweep.v[0: num_baseline_samples])
     )
 
 
