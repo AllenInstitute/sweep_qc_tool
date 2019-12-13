@@ -28,6 +28,7 @@ DEFAULT_FIGSIZE = (8, 8)
 
 
 class SweepPlotConfig(NamedTuple):
+    test_pulse_plot_start: float
     test_pulse_plot_end: float
     test_pulse_baseline_samples: int
     backup_experiment_start_index: int
@@ -36,7 +37,6 @@ class SweepPlotConfig(NamedTuple):
     experiment_plot_bessel_order: int
     experiment_plot_bessel_critical_frequency: float
     thumbnail_step: int
-    test_pulse_plot_start: float
 
 
 class SweepTableModel(QAbstractTableModel):
