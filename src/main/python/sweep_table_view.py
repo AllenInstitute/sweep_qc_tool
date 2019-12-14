@@ -5,6 +5,7 @@ from pyqtgraph import mkPen, PlotWidget
 
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
+from sweep_plotter import TestPlotData, ExpPlotData
 
 
 class SweepTableView(QTableView):
@@ -82,13 +83,20 @@ class SweepTableView(QTableView):
         if not index.column() in {column_map["test epoch"], column_map["experiment epoch"]}:
             return
 
-        time, voltage, baseline = self.model().data(index).full
+        full = self.model().data(index).full
         index_rect = self.visualRect(index)        
 
         graph = PlotWidget()
         item = graph.getPlotItem()
-        item.plot(time, voltage, pen=mkPen(color="k", width=2))
-        item.addLine(y=baseline, pen=mkPen(color="b", width=2))
+
+        if isinstance(full, ExpPlotData):
+            item.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
+            item.addLine(y=full.baseline, pen=mkPen(color="b", width=2))
+
+        elif isinstance(full, TestPlotData):
+            item.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
+            item.plot(full.time, full.previous, pen=mkPen(color="b", width=2))
+            item.plot(full.time, full.initial, pen=mkPen(color="r", width=2))
 
 
         popup = QDialog()

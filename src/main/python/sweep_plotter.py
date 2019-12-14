@@ -1,6 +1,6 @@
 import io
 
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Union
 
 from PyQt5.QtCore import QByteArray
 
@@ -29,9 +29,22 @@ class SweepPlotConfig(NamedTuple):
     thumbnail_step: int
 
 
+class ExpPlotData(NamedTuple):
+    time: np.ndarray
+    voltage: np.ndarray
+    baseline: np.ndarray
+
+
+class TestPlotData(NamedTuple):
+    time: np.ndarray
+    voltage: np.ndarray
+    previous: np.ndarray
+    initial: np.ndarray
+
+
 class FixedPlots(NamedTuple):
     thumbnail: QByteArray
-    full: QByteArray
+    full: Union[ExpPlotData, TestPlotData]
 
 
 class SweepPlotter:
@@ -54,6 +67,7 @@ class SweepPlotter:
         self.initial_test_voltage = None
         self._bessel_params = None
 
+
     def make_test_pulse_plots(self, sweep_number, sweep_data, advance=True):
 
         time, voltage = test_response_plot_data(
@@ -63,15 +77,13 @@ class SweepPlotter:
             self.config.test_pulse_baseline_samples
         )
 
-        full = make_test_pulse_plot(sweep_number, time, voltage, 
-            self.previous_test_voltage, self.initial_test_voltage
-        )
-
         thumbnail = make_test_pulse_plot(sweep_number, 
             time, voltage, 
             self.previous_test_voltage, self.initial_test_voltage, 
             step=self.config.thumbnail_step, labels=False
         )
+
+        previous = self.previous_test_voltage
 
         if advance:
             if self.initial_test_voltage is None:
@@ -79,7 +91,16 @@ class SweepPlotter:
                 
             self.previous_test_voltage = voltage
 
-        return FixedPlots(thumbnail=svg_from_mpl_axes(thumbnail), full=svg_from_mpl_axes(full))
+        return FixedPlots(
+            thumbnail=svg_from_mpl_axes(thumbnail), 
+            full=TestPlotData(
+                time=time,
+                voltage=voltage,
+                previous=previous,
+                initial=self.initial_test_voltage
+            )
+        )
+
 
     def make_experiment_plots(self, sweep_number, sweep_data):
 
@@ -90,11 +111,19 @@ class SweepPlotter:
             self.config.experiment_baseline_end_index
         )
 
-        full = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline)
         thumbnail = make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, 
             step=self.config.thumbnail_step, labels=False
         )
-        return FixedPlots(thumbnail=svg_from_mpl_axes(thumbnail), full=(exp_time, exp_voltage, exp_baseline))
+
+        return FixedPlots(
+            thumbnail=svg_from_mpl_axes(thumbnail),
+            full=ExpPlotData(
+                time=exp_time, 
+                voltage=exp_voltage, 
+                baseline=exp_baseline
+            )
+        )
+
 
     def advance(self, sweep_number):
         sweep_data = self.data_set.sweep(sweep_number)
