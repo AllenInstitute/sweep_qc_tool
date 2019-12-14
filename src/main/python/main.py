@@ -1,22 +1,21 @@
 import sys
-from pathlib import Path
 import argparse
 import os
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QMenu, QWidget, QTabWidget,
-    QTableView, QGraphicsView,
+    QMainWindow, QWidget, QTabWidget,
+    QGraphicsView,
     QHeaderView,
-    QVBoxLayout, QHBoxLayout,
-    QFileDialog,
-    QLabel, QFrame
+    QVBoxLayout,
+    QLabel
 )
-from PyQt5.QtCore import pyqtSignal
-from pyqtgraph import GraphicsLayoutWidget
+from pyqtgraph import setConfigOption
 
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
-from sweep import SweepTableView, SweepTableModel, SweepPlotConfig
+from sweep_table_view import SweepTableView
+from sweep_table_model import SweepTableModel
+from sweep_plotter import SweepPlotConfig
 from pre_fx_data import PreFxData
 from fx_data import FxData
 from pre_fx_controller import PreFxController
@@ -242,6 +241,8 @@ class Application(object):
 
 if __name__ == '__main__':
     import logging; logging.getLogger().setLevel(logging.INFO)
+
+    setConfigOption("background", "w")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", default=os.getcwd(), type=str, help="output path for manual states")
