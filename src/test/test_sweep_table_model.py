@@ -3,7 +3,7 @@ import pytest
 from PyQt5.QtCore import QModelIndex, Qt
 from PyQt5.QtGui import QColor
 
-from sweep import SweepTableModel, SweepPlotConfig
+from sweep_table_model import SweepTableModel, SweepPlotConfig
 
 @pytest.fixture
 def model():

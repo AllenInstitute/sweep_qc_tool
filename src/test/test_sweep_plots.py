@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from sweep import test_response_plot_data
+from sweep_plotter import test_response_plot_data
 
 
 class MockSweep:
