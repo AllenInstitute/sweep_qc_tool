@@ -66,12 +66,13 @@ class ExperimentPopupPlotter:
         plot.setLabel("bottom", "time (s)")
 
         plot.plot(self.time, self.voltage, pen=mkPen(color="k", width=2))
-        plot.addLine(y=self.baseline, pen=mkPen(color="b", width=2), label="baseline")
+        plot.addLine(y=self.baseline, pen=mkPen(color="b", width=2), 
+            label="baseline")
 
         return graph
 
 
-class TestPopupPlotter:
+class PulsePopupPlotter:
 
     __slots__ = ["time", "voltage", "previous", "initial", "sweep_number"]
 
@@ -129,7 +130,7 @@ class TestPopupPlotter:
 
 class FixedPlots(NamedTuple):
     thumbnail: QByteArray
-    full: Union[ExperimentPopupPlotter, TestPopupPlotter]
+    full: Union[ExperimentPopupPlotter, PulsePopupPlotter]
 
 
 class SweepPlotter:
@@ -179,7 +180,7 @@ class SweepPlotter:
 
         return FixedPlots(
             thumbnail=svg_from_mpl_axes(thumbnail), 
-            full=TestPopupPlotter(
+            full=PulsePopupPlotter(
                 time=time,
                 voltage=voltage,
                 previous=previous,
