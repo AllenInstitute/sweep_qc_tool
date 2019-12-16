@@ -36,7 +36,6 @@ class SweepPlotConfig(NamedTuple):
     thumbnail_step: int
 
 
-
 class ExperimentPopupPlotter:
 
     __slots__ = ["time", "voltage", "baseline"]
@@ -63,7 +62,10 @@ class ExperimentPopupPlotter:
         self.baseline = baseline
 
     def __call__(self) -> PlotWidget:
-        
+        """ Generate an interactive pyqtgraph plot widget from this plotter's
+        data
+        """
+
         graph = PlotWidget()
         plot = graph.getPlotItem()
 
@@ -113,6 +115,9 @@ class PulsePopupPlotter:
         self.sweep_number = sweep_number
 
     def __call__(self) -> PlotWidget:
+        """ Generate an interactive pyqtgraph plot widget from this plotter's
+        data
+        """
 
         graph = PlotWidget()
         plot = graph.getPlotItem()
@@ -390,8 +395,10 @@ def experiment_plot_data(
 
     """
 
-    experiment_start_index, experiment_end_index = get_experiment_epoch(sweep.i, sweep.sampling_rate)# 
-    
+    experiment_start_index, experiment_end_index = \
+        get_experiment_epoch(sweep.i, sweep.sampling_rate) \
+            or (backup_start_index, len(sweep.i))
+
     if experiment_start_index <= 0:
         experiment_start_index = backup_start_index
     
