@@ -87,17 +87,20 @@ class SweepTableView(QTableView):
         index_rect = self.visualRect(index)        
 
         graph = PlotWidget()
-        item = graph.getPlotItem()
+        plot = graph.getPlotItem()
+
+        plot.setLabel("left", "membrane potential (mV)")
+        plot.setLabel("bottom", "time (s)")
 
         if isinstance(full, ExpPlotData):
-            item.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
-            item.addLine(y=full.baseline, pen=mkPen(color="b", width=2))
+            plot.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
+            plot.addLine(y=full.baseline, pen=mkPen(color="b", width=2), label="baseline")
 
         elif isinstance(full, TestPlotData):
-            item.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
-            item.plot(full.time, full.previous, pen=mkPen(color="b", width=2))
-            item.plot(full.time, full.initial, pen=mkPen(color="r", width=2))
-
+            plot.addLegend()
+            plot.plot(full.time, full.voltage, pen=mkPen(color="k", width=2), name="current")
+            plot.plot(full.time, full.previous, pen=mkPen(color="b", width=2), name="previous")
+            plot.plot(full.time, full.initial, pen=mkPen(color="r", width=2), name="initial")
 
         popup = QDialog()
         layout = QGridLayout()
