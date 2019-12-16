@@ -5,7 +5,6 @@ from pyqtgraph import mkPen, PlotWidget
 
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
-from sweep_plotter import TestPlotData, ExpPlotData
 
 
 class SweepTableView(QTableView):
@@ -86,21 +85,7 @@ class SweepTableView(QTableView):
         full = self.model().data(index).full
         index_rect = self.visualRect(index)        
 
-        graph = PlotWidget()
-        plot = graph.getPlotItem()
-
-        plot.setLabel("left", "membrane potential (mV)")
-        plot.setLabel("bottom", "time (s)")
-
-        if isinstance(full, ExpPlotData):
-            plot.plot(full.time, full.voltage, pen=mkPen(color="k", width=2))
-            plot.addLine(y=full.baseline, pen=mkPen(color="b", width=2), label="baseline")
-
-        elif isinstance(full, TestPlotData):
-            plot.addLegend()
-            plot.plot(full.time, full.voltage, pen=mkPen(color="k", width=2), name="current")
-            plot.plot(full.time, full.previous, pen=mkPen(color="b", width=2), name="previous")
-            plot.plot(full.time, full.initial, pen=mkPen(color="r", width=2), name="initial")
+        graph = full()
 
         popup = QDialog()
         layout = QGridLayout()

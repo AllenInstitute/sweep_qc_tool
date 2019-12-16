@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Sequence
 
 from PyQt5.QtCore import (
     QAbstractTableModel, QModelIndex, pyqtSignal
@@ -20,7 +20,7 @@ class SweepTableModel(QAbstractTableModel):
 
     def __init__(
         self, 
-        colnames: List[str],
+        colnames: Sequence[str],
         plot_config: SweepPlotConfig
     ):
         super().__init__()
@@ -143,10 +143,10 @@ class SweepTableModel(QAbstractTableModel):
 
 
     def headerData(
-            self,
-            section: int,
-            orientation: int = QtCore.Qt.Horizontal,
-            role: int = QtCore.Qt.DisplayRole
+        self,
+        section: int,
+        orientation: int = QtCore.Qt.Horizontal,
+        role: int = QtCore.Qt.DisplayRole
     ):
         """ Returns the name of the 'section'th column 
         """

@@ -1,8 +1,10 @@
 import io
 
-from typing import NamedTuple, Tuple, Union
+from typing import NamedTuple, Tuple, Union, Optional
 
 from PyQt5.QtCore import QByteArray
+
+from pyqtgraph import PlotWidget, mkPen
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,22 +31,105 @@ class SweepPlotConfig(NamedTuple):
     thumbnail_step: int
 
 
-class ExpPlotData(NamedTuple):
-    time: np.ndarray
-    voltage: np.ndarray
-    baseline: np.ndarray
+
+class ExperimentPopupPlotter:
+
+    __slots__ = ["time", "voltage", "baseline"]
+
+    def __init__(
+        self, 
+        time: np.ndarray, 
+        voltage: np.ndarray, 
+        baseline: np.ndarray
+    ):
+        """ Displays an interactive plot of a sweep's experiment epoch, along
+        with a horizontal line at the baseline.
+
+        Parameters
+        ----------
+        time : in seconds. Forms the domain of the plot
+        voltage : in mV
+        baseline: in mV
+
+        """
+
+        self.time = time
+        self.voltage = voltage
+        self.baseline = baseline
+
+    def __call__(self) -> PlotWidget:
+        
+        graph = PlotWidget()
+        plot = graph.getPlotItem()
+
+        plot.setLabel("left", "membrane potential (mV)")
+        plot.setLabel("bottom", "time (s)")
+
+        plot.plot(self.time, self.voltage, pen=mkPen(color="k", width=2))
+        plot.addLine(y=self.baseline, pen=mkPen(color="b", width=2), label="baseline")
+
+        return graph
 
 
-class TestPlotData(NamedTuple):
-    time: np.ndarray
-    voltage: np.ndarray
-    previous: np.ndarray
-    initial: np.ndarray
+class TestPopupPlotter:
+
+    __slots__ = ["time", "voltage", "previous", "initial", "sweep_number"]
+
+    def __init__(
+        self, 
+        time: np.ndarray, 
+        voltage: np.ndarray, 
+        previous: Optional[np.ndarray], 
+        initial: Optional[np.ndarray],
+        sweep_number: int
+    ):
+        """ Plots the test pulse reponse, along with responses to the previous
+        and first test pulse.
+
+        Parameters
+        ----------
+        time : in seconds. Forms the domain of the plot
+        voltage : in mV. Voltage trace from this sweep
+        previous : in mV. Voltage trace from the prior sweep, or None if this is
+            the first sweep.
+        initial : in mV. Voltage trace from the first sweep, or None if this is
+            the first sweep.
+        sweep_number : identifier for this sweep
+
+        """
+
+        self.time = time
+        self.voltage = voltage
+        self.previous = previous
+        self.initial = initial
+        self.sweep_number = sweep_number
+
+    def __call__(self) -> PlotWidget:
+
+        graph = PlotWidget()
+        plot = graph.getPlotItem()
+
+        plot.setLabel("left", "membrane potential (mV)")
+        plot.setLabel("bottom", "time (s)")
+
+        plot.addLegend()
+        plot.plot(self.time, self.voltage, pen=mkPen(color="k", width=2), 
+            name=f"sweep {self.sweep_number}")
+
+        if self.previous is not None:
+            plot.plot(self.time, self.previous, pen=mkPen(color="b", width=2), 
+                name="previous")
+        
+        if self.initial is not None:
+            plot.plot(self.time, self.initial, pen=mkPen(color="r", width=2), 
+                name="initial")
+
+        return graph
 
 
 class FixedPlots(NamedTuple):
     thumbnail: QByteArray
-    full: Union[ExpPlotData, TestPlotData]
+    full: Union[ExperimentPopupPlotter, TestPopupPlotter]
 
 
 class SweepPlotter:
@@ -84,6 +169,7 @@ class SweepPlotter:
         )
 
         previous = self.previous_test_voltage
+        initial = self.initial_test_voltage
 
         if advance:
             if self.initial_test_voltage is None:
@@ -93,11 +179,12 @@ class SweepPlotter:
 
         return FixedPlots(
             thumbnail=svg_from_mpl_axes(thumbnail), 
-            full=TestPlotData(
+            full=TestPopupPlotter(
                 time=time,
                 voltage=voltage,
                 previous=previous,
-                initial=self.initial_test_voltage
+                initial=initial,
+                sweep_number=sweep_number
             )
         )
 
@@ -117,7 +204,7 @@ class SweepPlotter:
 
         return FixedPlots(
             thumbnail=svg_from_mpl_axes(thumbnail),
-            full=ExpPlotData(
+            full=ExperimentPopupPlotter(
                 time=exp_time, 
                 voltage=exp_voltage, 
                 baseline=exp_baseline
@@ -218,8 +305,6 @@ def experiment_plot_data(
 
     experiment_start_index, experiment_end_index = get_experiment_epoch(sweep.i, sweep.sampling_rate)# 
     
-    duration = experiment_end_index - experiment_start_index
-
     if experiment_start_index <= 0:
         experiment_start_index = backup_start_index
     
@@ -254,4 +339,3 @@ def make_experiment_plot(sweep_number, exp_time, exp_voltage, exp_baseline, step
     return fig
 
 
-# def full_experiment_plot()
