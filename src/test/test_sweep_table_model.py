@@ -9,7 +9,7 @@ from sweep_table_model import SweepTableModel, SweepPlotConfig
 def model():
     return SweepTableModel(
         ["a", "b", "c"],
-        SweepPlotConfig(1, 2, 3, 4, 5, 6, 7, 8, 9)
+        SweepPlotConfig(1, 2, 3, 4, 5, 6, 7)
     )
 
 

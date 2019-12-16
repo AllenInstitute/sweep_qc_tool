@@ -8,7 +8,6 @@ from pyqtgraph import PlotWidget, mkPen
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import bessel, filtfilt
 
 from ipfx.ephys_data_set import EphysDataSet
 from ipfx.sweep import Sweep
@@ -26,8 +25,6 @@ class SweepPlotConfig(NamedTuple):
     backup_experiment_start_index: int
     experiment_baseline_start_index: int
     experiment_baseline_end_index: int
-    experiment_plot_bessel_order: int
-    experiment_plot_bessel_critical_frequency: float
     thumbnail_step: int
 
 
@@ -135,23 +132,11 @@ class FixedPlots(NamedTuple):
 
 class SweepPlotter:
 
-    @property
-    def bessel_params(self):
-        if self._bessel_params is None:
-            self._bessel_params = bessel(
-                self.config.experiment_plot_bessel_order, 
-                self.config.experiment_plot_bessel_critical_frequency, 
-                "low"
-            )
-        return self._bessel_params
-
-
     def __init__(self, data_set: EphysDataSet, config: SweepPlotConfig):
         self.data_set = data_set
         self.config = config
         self.previous_test_voltage = None
         self.initial_test_voltage = None
-        self._bessel_params = None
 
 
     def make_test_pulse_plots(self, sweep_number, sweep_data, advance=True):
@@ -193,7 +178,7 @@ class SweepPlotter:
     def make_experiment_plots(self, sweep_number, sweep_data):
 
         exp_time, exp_voltage, exp_baseline = experiment_plot_data(
-            sweep_data, self.bessel_params[0], self.bessel_params[1], 
+            sweep_data, 
             self.config.backup_experiment_start_index, 
             self.config.experiment_baseline_start_index, 
             self.config.experiment_baseline_end_index
@@ -297,8 +282,6 @@ def make_test_pulse_plot(sweep_number, time, voltage, previous=None, initial=Non
     
 def experiment_plot_data(
     sweep, 
-    bessel_num, 
-    bessel_denom, 
     backup_start_index: int = 5000, 
     baseline_start_index: int = 5000, 
     baseline_end_index: int = 9000
@@ -314,7 +297,6 @@ def experiment_plot_data(
 
     voltage[np.isnan(voltage)] = 0.0
 
-    voltage = filtfilt(bessel_num, bessel_denom, voltage, axis=0)
     baseline_mean = np.nanmean(voltage[baseline_start_index: baseline_end_index])
     return time, voltage, baseline_mean
 
