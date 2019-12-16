@@ -5,7 +5,7 @@ import numpy as np
 from pyqtgraph import InfiniteLine
 
 from sweep_plotter import (
-    test_response_plot_data, 
+    test_response_plot_data, experiment_plot_data,
     PulsePopupPlotter, ExperimentPopupPlotter
 )
 
@@ -19,6 +19,19 @@ class MockSweep:
     @property
     def v(self):
         return np.arange(0, 10, 0.5)
+
+    @property
+    def i(self):
+        current = np.zeros(10)
+        current[2:] += 1
+        current[3:] -= 1
+        current[6:] += 1
+        current[-1] = 0
+        return current
+
+    @property
+    def sampling_rate(self):
+        return 0.0
 
 
 @pytest.fixture
@@ -39,6 +52,16 @@ def test_test_response_plot_data(sweep, start, end, baseline, expected):
     obtained = test_response_plot_data(sweep, start, end, baseline)
     allclose(expected[0], obtained[0])
     allclose(expected[1], obtained[1])
+
+
+def test_experiment_plot_data(sweep):
+    obt_t, obt_v, obt_base = experiment_plot_data(
+        sweep, baseline_start_index=0, baseline_end_index=2
+    )
+
+    allclose(obt_t, [3, 3.5])
+    allclose(obt_v, [3, 3.5])
+    check.equal(obt_base, 3.25)
 
 
 @pytest.mark.parametrize("time,voltage,previous,initial,sweep_number", [
