@@ -42,10 +42,12 @@ class ComboBoxDelegate(QItemDelegate):
         self.items = choices
 
     def createEditor(self, parent, option, index):
-        self.editor = QComboBox(parent)
-        self.editor.addItems(self.items)
-        self.editor.activated.connect(self.onActivated)
-        return self.editor
+
+        editor = QComboBox(parent)
+        editor.addItems(self.items)
+        editor.activated.connect(self.onActivated)
+
+        return editor
 
     def paint(self, painter, option, index):
         value = index.data(QtCore.Qt.DisplayRole)
@@ -56,9 +58,19 @@ class ComboBoxDelegate(QItemDelegate):
         style.drawComplexControl(QStyle.CC_ComboBox, opt, painter)
         QItemDelegate.paint(self, painter, option, index)
 
-    def onActivated(self, index):
+    def onActivated(self):
+        """ Triggered when the user makes a selection. When that occurs, focus 
+        is removed from the editing combobox, which in turn causes 
+        setModelData to be called on this delegate.
+        """
+
         app = QApplication.instance()
-        app.focusWidget().clearFocus()
+
+        sender = app.sender()
+        focus = app.focusWidget()
+
+        if sender is focus:
+            focus.clearFocus()
 
     def setEditorData(self, editor, index):
         value = index.data(QtCore.Qt.DisplayRole)
