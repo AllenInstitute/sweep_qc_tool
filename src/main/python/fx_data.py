@@ -38,7 +38,7 @@ class FxData(QObject):
         self.ontology = ontology
         self.sweep_info = sweep_info
         self.cell_info = cell_info
-        print("set fx parameters")
+
     def connect(self, pre_fx_data):
         pre_fx_data.data_changed.connect(self.set_fx_parameters)
 
