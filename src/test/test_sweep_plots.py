@@ -9,7 +9,7 @@ from sweep_plotter import (
     PulsePopupPlotter, ExperimentPopupPlotter
 )
 
-from .conftest import allclose
+from .conftest import check_allclose
 
 
 class MockSweep:
@@ -47,8 +47,8 @@ def sweep():
 def test_test_response_plot_data(sweep, start, end, baseline, expected):
 
     obtained = test_response_plot_data(sweep, start, end, baseline)
-    allclose(expected[0], obtained[0])
-    allclose(expected[1], obtained[1])
+    check_allclose(expected[0], obtained[0])
+    check_allclose(expected[1], obtained[1])
 
 
 def test_experiment_plot_data(sweep):
@@ -56,8 +56,8 @@ def test_experiment_plot_data(sweep):
         sweep, baseline_start_index=0, baseline_end_index=2
     )
 
-    allclose(obt_t, [3, 3.5])
-    allclose(obt_v, [3, 3.5])
+    check_allclose(obt_t, [3, 3.5])
+    check_allclose(obt_v, [3, 3.5])
     check.equal(obt_base, 3.25)
 
 
@@ -75,14 +75,14 @@ def test_pulse_popup_plotter(time, voltage, previous, initial, sweep_number):
     check.equal(len(data_items), 3 - (previous is None) - (initial is None))
 
     for item in data_items:
-        allclose(item.xData, time)
+        check_allclose(item.xData, time)
 
         if item.name == f"sweep {sweep_number}":
-            allclose(item.yData, voltage)
+            check_allclose(item.yData, voltage)
         elif item.name == "previous":
-            allclose(item.yData, previous) 
+            check_allclose(item.yData, previous) 
         elif item.name == "initial":
-            allclose(item.yData, initial)
+            check_allclose(item.yData, initial)
 
 
 @pytest.mark.parametrize("time,voltage,baseline", [
@@ -96,8 +96,8 @@ def test_experiment_popup_plotter_graph(time, voltage, baseline):
     data_items = graph.getPlotItem().listDataItems()
     
     check.equal(len(data_items), 1)
-    allclose(data_items[0].xData, time)
-    allclose(data_items[0].yData, voltage)
+    check_allclose(data_items[0].xData, time)
+    check_allclose(data_items[0].yData, voltage)
 
     line = None
     for item in graph.getPlotItem().items:

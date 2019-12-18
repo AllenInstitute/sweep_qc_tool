@@ -11,7 +11,7 @@ from sweep_table_model import SweepTableModel
 from sweep_plotter import SweepPlotConfig
 from main import SweepPage
 
-from .conftest import mock_called_with, mock_not_called
+from .conftest import check_mock_called_with, check_mock_not_called
 
 
 class MockPlotter:
@@ -24,7 +24,7 @@ class MockPlotter:
 
 
 @pytest.mark.parametrize("row", [0, 1, 2])
-@pytest.mark.parametrize("col", [ii for ii in range(8)])
+@pytest.mark.parametrize("col", list(range(8)))
 def test_plot_popup_click(qtbot, row, col):
 
     model = SweepTableModel(
@@ -66,6 +66,6 @@ def test_plot_popup_click(qtbot, row, col):
 
     if col in [6, 7]:
         expected = ("test" if col == 6 else "exp") + f"_{row}"
-        mock_called_with(view.popup_plot, expected, colpos, rowpos)
+        check_mock_called_with(view.popup_plot, expected, colpos, rowpos)
     else:
-        mock_not_called(view.popup_plot)
+        check_mock_not_called(view.popup_plot)

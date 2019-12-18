@@ -19,15 +19,15 @@ sys.path.append(os.path.join(
 
 
 @check.check_func
-def allclose(a, b, *args, **kwargs):
+def check_allclose(a, b, *args, **kwargs):
     assert np.allclose(a, b, *args, **kwargs)
 
 
 @check.check_func
-def mock_called_with(mc, *args, **kwargs):
+def check_mock_called_with(mc, *args, **kwargs):
     mc.assert_called_with(*args, **kwargs)
 
 
 @check.check_func
-def mock_not_called(mc):
+def check_mock_not_called(mc):
     mc.assert_not_called()
