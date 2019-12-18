@@ -1,17 +1,35 @@
-from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout
+from typing import Optional
+
+from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget
 from PyQt5.QtCore import QModelIndex
 
 from pyqtgraph import mkPen, PlotWidget
 
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
+from sweep_plotter import PopupPlotter
 
 
 class SweepTableView(QTableView):
 
+    @property
+    def colnames(self):
+        return self._colnames
+
+    @colnames.setter
+    def colnames(self, names):
+        self._colnames = names
+        self._idx_colname_map = {}
+        self._colname_idx_map = {}
+        
+        for idx, name in enumerate(self._colnames):
+            self._idx_colname_map[idx] = name
+            self._colname_idx_map[name] = idx
+
     def __init__(self, colnames):
         super().__init__()
         self.colnames = colnames
+
         self.svg_delegate = SvgDelegate()
         manual_qc_choices = ["default", "failed", "passed"]
         self.cb_delegate = ComboBoxDelegate(self, manual_qc_choices)
@@ -26,6 +44,11 @@ class SweepTableView(QTableView):
 
         self.setWordWrap(True)
 
+    def get_column_index(self, name: str) -> Optional[int]:
+        return self._colname_idx_map.get(name, None)
+    
+    def get_index_column(self, index: int) -> Optional[str]:
+        return self._idx_colname_map.get(index, None)
 
     def setModel(self, model: SweepTableModel):
         """ Attach a SweepTableModel to this view. The model will provide data for 
@@ -64,7 +87,6 @@ class SweepTableView(QTableView):
         for row in range(self.model().rowCount()):
             self.openPersistentEditor(self.model().index(row, column))
 
-
     def on_clicked(self, index: QModelIndex):
         """ When plot thumbnails are clicked, open a larger plot in a popup.
 
@@ -74,23 +96,36 @@ class SweepTableView(QTableView):
             Which plot to open. The popup will be mopved to this item's location.
 
         """
-        
-        if not hasattr(self.model(), "column_map"):
+
+        test_column = self.get_column_index("test epoch")
+        exp_column = self.get_column_index("experiment epoch")
+
+        if not index.column() in {test_column, exp_column}:
             return
-        column_map = self.model().column_map
 
-        if not index.column() in {column_map["test epoch"], column_map["experiment epoch"]}:
-            return
+        index_rect = self.visualRect(index)
+        self.popup_plot(
+            self.model().data(index).full(),
+            index_rect.left(),
+            index_rect.top()
+        )
 
-        full = self.model().data(index).full
-        index_rect = self.visualRect(index)        
+    def popup_plot(self, graph: QWidget, left: int = 0, top: int = 0):
+        """ Make a popup with a single widget, which ought to be a plotter for 
+        the full experiment or test pulse plots.
 
-        graph = full()
+        Parameters
+        ----------
+        graph : a widget to be displayed in the popup
+        left : left position at which the popup will be placed (px)
+        top : top position at which the popup will be placed (px)
+
+        """
 
         popup = QDialog()
         layout = QGridLayout()
         
         layout.addWidget(graph)
         popup.setLayout(layout)
-        popup.move(index_rect.left(), index_rect.top())
+        popup.move(left, top)
         popup.exec()
