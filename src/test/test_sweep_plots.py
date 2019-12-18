@@ -9,6 +9,8 @@ from sweep_plotter import (
     PulsePopupPlotter, ExperimentPopupPlotter
 )
 
+from .conftest import allclose
+
 
 class MockSweep:
 
@@ -37,11 +39,6 @@ class MockSweep:
 @pytest.fixture
 def sweep():
     return MockSweep()
-
-
-@check.check_func
-def allclose(a, b, *args, **kwargs):
-    assert np.allclose(a, b, *args, **kwargs)
 
     
 @pytest.mark.parametrize("start,end,baseline,expected", [

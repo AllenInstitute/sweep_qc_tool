@@ -1,4 +1,5 @@
 import pytest
+import pytest_check as check
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QSize, QRect
@@ -37,18 +38,18 @@ def test_vspacing_accessor(layout):
     assert layout.verticalSpacing() == 36
 
 def test_add_item(layout):
-    assert layout.count() == 0
+    check.equal(layout.count(), 0)
     layout.addItem("foo")
-    assert layout.count() == 1
-
+    check.equal(layout.count(), 1)
+    
 def test_item_at(layout):
     layout.addItem("foo")
     assert layout.itemAt(0) == "foo"
 
 def test_take_at(layout):
     layout.addItem("foo")
-    assert layout.takeAt(0) == "foo"
-    assert layout.count() == 0
+    check.equal(layout.takeAt(0), "foo")
+    check.equal(layout.count(), 0)
 
 def test_minimum_size(layout):
     layout.addItem(RectangularItem(4))
@@ -64,5 +65,5 @@ def test_do_layout(layout):
 
     layout.doLayout(QRect(0, 0, 50, 1000), False)
 
-    assert first.geometry() == QRect(12, 12, 20, 20)
-    assert second.geometry() == QRect(12, 68, 30, 30) # next row
+    check.equal(first.geometry(), QRect(12, 12, 20, 20))
+    check.equal(second.geometry(), QRect(12, 68, 30, 30)) # next row
