@@ -1,4 +1,5 @@
 import pytest
+import pytest_check as check
 
 from PyQt5.QtWidgets import QWidget
 
@@ -24,8 +25,8 @@ def test_clear(qtbot, page):
     page.central_layout.addWidget(widget)
     page.clear()
     
-    assert widget.parent() is None
-    assert page.central_layout.count() == 0
+    check.is_none(widget.parent())
+    check.equal(page.central_layout.count(), 0)
 
 
 def test_on_new_data(page):
@@ -39,14 +40,16 @@ def test_on_new_data(page):
     }
     page.on_new_data(data)
 
-    assert page.central_layout.count() == 3
+    check.equal(page.central_layout.count(), 3)
     # need to indirect through intermediate category widget, cell feature, to 
     # finally get to the value Qlabel
-    assert page.central_layout\
-        .itemAt(2).widget()\
-        .layout().itemAt(0).widget()\
-        .layout().itemAt(2).widget()\
-        .text() == "None" 
+    check.equal(page.central_layout
+        .itemAt(2).widget()
+        .layout().itemAt(0).widget()
+        .layout().itemAt(2).widget()
+        .text(),
+        "None"
+    )
 
 
 

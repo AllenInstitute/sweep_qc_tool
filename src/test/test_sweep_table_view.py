@@ -11,6 +11,8 @@ from sweep_table_model import SweepTableModel
 from sweep_plotter import SweepPlotConfig
 from main import SweepPage
 
+from .conftest import mock_called_with, mock_not_called
+
 
 class MockPlotter:
 
@@ -64,6 +66,6 @@ def test_plot_popup_click(qtbot, row, col):
 
     if col in [6, 7]:
         expected = ("test" if col == 6 else "exp") + f"_{row}"
-        view.popup_plot.assert_called_with(expected, colpos, rowpos)
+        mock_called_with(view.popup_plot, expected, colpos, rowpos)
     else:
-        view.popup_plot.assert_not_called()
+        mock_not_called(view.popup_plot)

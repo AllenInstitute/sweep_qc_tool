@@ -1,4 +1,5 @@
 import pytest
+import pytest_check as check
 
 from PyQt5.QtWidgets import QComboBox, QApplication, QMainWindow
 from PyQt5.QtCore import Qt
@@ -6,6 +7,8 @@ from PyQt5.QtCore import Qt
 import numpy as np
 
 from delegates import ComboBoxDelegate
+
+from .conftest import allclose
 
 
 def test_combobox_activated(qtbot):
@@ -27,5 +30,5 @@ def test_combobox_activated(qtbot):
 
     cb.activated.emit(12)
 
-    assert app.focusWidget() is None
-    assert np.allclose(record, [12])
+    check.is_none(app.focusWidget())
+    allclose(record, [12])
