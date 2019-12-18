@@ -144,6 +144,9 @@ class PulsePopupPlotter:
         return graph
 
 
+PopupPlotter = Union[ExperimentPopupPlotter, PulsePopupPlotter]
+
+
 class FixedPlots(NamedTuple):
     """ Each plot displayed in the sweep table comes in a thumbnail-full plot
     pair.
