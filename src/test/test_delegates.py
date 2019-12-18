@@ -8,7 +8,7 @@ import numpy as np
 
 from delegates import ComboBoxDelegate
 
-from .conftest import allclose
+from .conftest import check_allclose
 
 
 def test_combobox_activated(qtbot):
@@ -31,4 +31,4 @@ def test_combobox_activated(qtbot):
     cb.activated.emit(12)
 
     check.is_none(app.focusWidget())
-    allclose(record, [12])
+    check_allclose(record, [12])

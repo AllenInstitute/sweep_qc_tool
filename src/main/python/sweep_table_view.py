@@ -3,11 +3,8 @@ from typing import Optional
 from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget
 from PyQt5.QtCore import QModelIndex
 
-from pyqtgraph import mkPen, PlotWidget
-
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
-from sweep_plotter import PopupPlotter
 
 
 class SweepTableView(QTableView):
