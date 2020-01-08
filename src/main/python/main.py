@@ -1,6 +1,7 @@
 import sys
 import argparse
 import os
+from typing import Optional
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QTabWidget,
@@ -189,7 +190,10 @@ class Application(object):
         test_pulse_plot_start: float,
         test_pulse_plot_end: float, 
         test_pulse_baseline_samples: int,
-        thumbnail_step: int
+        thumbnail_step: int,
+        initial_nwb_path: Optional[str],
+        initial_stimulus_ontology_path: Optional[str],
+        initial_qc_criteria_path: Optional[str]
     ):
         self.app_cntxt = ApplicationContext()
 
@@ -229,6 +233,14 @@ class Application(object):
         self.pre_fx_data.set_default_stimulus_ontology()
         self.pre_fx_data.set_default_qc_criteria()
 
+        # The user can request that specific data be loaded on start
+        if initial_stimulus_ontology_path is not None:
+            self.pre_fx_controller.selected_stimulus_ontology_path.emit(initial_stimulus_ontology_path)
+        if initial_qc_criteria_path is not None:
+            self.pre_fx_controller.selected_qc_criteria_path.emit(initial_qc_criteria_path)
+        if initial_nwb_path is not None:
+            self.pre_fx_controller.selected_data_set_path.emit(initial_nwb_path)
+
 
     def run(self):
         self.main_window.show()
@@ -262,6 +274,15 @@ if __name__ == '__main__':
     )
     parser.add_argument("--thumbnail_step", type=float, default=20, 
         help="step size for generating decimated thumbnail images for individual sweeps."
+    )
+    parser.add_argument("--initial_nwb_path", type=str, default=None, 
+        help="upon start, immediately load an nwb file from here"
+    )
+    parser.add_argument("--initial_stimulus_ontology_path", type=str, default=None,
+        help="upon start, immediately load a stimulus ontology from here"
+    )
+    parser.add_argument("--initial_qc_criteria_path", type=str, default=None,
+        help="upon start, immediately load qc criteria from here"
     )
 
     args = parser.parse_args()
