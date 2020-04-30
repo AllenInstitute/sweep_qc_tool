@@ -88,9 +88,9 @@ class SweepTableModel(QAbstractTableModel):
                 sweep_number,
                 sweep["stimulus_code"],
                 sweep["stimulus_name"],
-                "passed" if state["passed"] and sweep["passed"] else "failed", # auto qc
+                "passed" if state["passed"] and sweep["passed"] else "failed",  # auto qc
                 manual_qc_states[sweep_number],
-                format_fail_tags(sweep["tags"] + state["reasons"]), # fail tags
+                format_fail_tags(sweep["tags"] + state["reasons"]),     # fail tags
                 test_pulse_plots,
                 experiment_plots
             ])

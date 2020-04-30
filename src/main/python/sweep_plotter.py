@@ -127,15 +127,15 @@ class PulsePopupPlotter:
 
         plot.addLegend()
 
-        if self.initial is not None:
-            plot.plot(self.time, self.initial,
-             pen=mkPen(color=TEST_PULSE_INIT_COLOR, width=2), 
-                name="initial")
-
-        if self.previous is not None:
-            plot.plot(self.time, self.previous, 
-            pen=mkPen(color=TEST_PULSE_PREV_COLOR, width=2), 
-                name="previous")
+        # if self.initial is not None:
+        #     plot.plot(self.time, self.initial,
+        #      pen=mkPen(color=TEST_PULSE_INIT_COLOR, width=2),
+        #         name="initial")
+        #
+        # if self.previous is not None:
+        #     plot.plot(self.time, self.previous,
+        #     pen=mkPen(color=TEST_PULSE_PREV_COLOR, width=2),
+        #         name="previous")
 
         plot.plot(self.time, self.voltage, 
             pen=mkPen(color=TEST_PULSE_CURRENT_COLOR, width=2), 
@@ -349,13 +349,13 @@ def make_test_pulse_plot(
     
     fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
-    if initial is not None:
-        ax.plot(time[::step], initial[::step], linewidth=1, label=f"initial", 
-            color=TEST_PULSE_INIT_COLOR)
-        
-    if previous is not None:
-        ax.plot(time[::step], previous[::step], linewidth=1, label=f"previous", 
-            color=TEST_PULSE_PREV_COLOR)
+    # if initial is not None:
+    #     ax.plot(time[::step], initial[::step], linewidth=1, label=f"initial",
+    #         color=TEST_PULSE_INIT_COLOR)
+    #
+    # if previous is not None:
+    #     ax.plot(time[::step], previous[::step], linewidth=1, label=f"previous",
+    #         color=TEST_PULSE_PREV_COLOR)
     
     ax.plot(time[::step], voltage[::step], linewidth=1, 
         label=f"sweep {sweep_number}", color=TEST_PULSE_CURRENT_COLOR)
