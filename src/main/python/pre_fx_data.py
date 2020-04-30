@@ -305,18 +305,16 @@ class PreFxData(QObject):
         #   sweeps that have been filtered and have passed auto-qc
         cell_features, cell_tags, sweep_features = extract_qc_features(data_set)
 
-        # TODO : remove this?
-        sweep_props.drop_tagged_sweeps(sweep_features)
+        # sweep_features -> dict, len = 21, if recording stops early len = 14
 
         # cell_state: list of dictionaries containing sweep pass/fail states
-        cell_state, cell_features, sweep_states, sweep_features = run_qc(
+        cell_state, cell_features, sweep_states, sweep_features_full = run_qc(
             stimulus_ontology, cell_features, sweep_features, qc_criteria
         )
 
         if commit:
             self.begin_commit_calculated.emit()
 
-            # TODO : is this redundant?
             self.stimulus_ontology = stimulus_ontology
             self.qc_criteria = qc_criteria
             self.nwb_path = nwb_path
@@ -326,31 +324,75 @@ class PreFxData(QObject):
             self.cell_tags = cell_tags
             self.cell_state = cell_state
 
-            self.sweep_features = []
-            self.sweep_states = []
-            # TODO : add 'n/a' to sweep features and sweep states not included in auto-qc
-            for table_index, table_row in data_set.sweep_table.iterrows():
-                if sweep_features and sweep_features[0]['sweep_number'] == table_index:
-                    self.sweep_features.append(sweep_features.pop(0))
-                    self.sweep_states.append(sweep_states.pop(0))
-                else:
-                    new_row = dict(table_row)
-                    new_row.update({'tags':[]})
-                    self.sweep_features.append(new_row)
-                    self.sweep_states.append(
-                        {'sweep_number': table_index, 'passed': False, 'reasons': ['no auto qc']}
-                        )
-                # else:
-                #     self.sweep_features.append(table_row)
-                #     self.sweep_states.append(
-                #         {'sweep_number': table_index, 'passed': 'n/a', 'reasons': ['no auto qc']}
-                #         )
+            num_sweeps = len(data_set.sweep_table)
 
-            # self.sweep_features = sweep_features
-            # self.sweep_states = sweep_states
+            self.sweep_features = [
+                dict.fromkeys(sweep_features_full[0].keys())
+                for _ in range(num_sweeps)
+            ]
+
+            self.sweep_states = [{'passed': None, 'reasons': [], 'sweep_number': x}
+                                 for x in range(num_sweeps)]
+
+            features_full_iter = iter(sweep_features_full)
+            features_iter = iter(sweep_features)
+
+            for index, row in enumerate(features_full_iter):
+                self.sweep_features[row['sweep_number']] = row
+                self.sweep_states[row['sweep_number']] = sweep_states[index]
+
+            for row in features_iter:
+                if self.sweep_features[row['sweep_number']]['passed'] is None:
+                    self.sweep_features[row['sweep_number']].update(row)
+                    self.sweep_features[row['sweep_number']]['passed'] = False
+                    self.sweep_states[row['sweep_number']]['passed'] = False
+
+            for index, row in data_set.sweep_table.iterrows():
+                if self.sweep_features[index]['sweep_number'] is None:
+                    self.sweep_features[index].update(row)
+                    self.sweep_features[index]['tags'] = []
+                    self.sweep_states[index]['reasons'] = ['No auto QC']
+
+
+            #
+            # for index, row in enumerate(features_full_iter):
+            #     if row['sweep_number'] == sweep_features[index]['row']:
+            #         sweep_features[index] = row
+            #     else:
+            #         sweep_features[index]['passed'] = False
+            #
+            # for index, row in enumerate(states_iter):
+            #     if row['sweep_number'] == self.sweep_states:
+            #         self.sweep_states[index] = row
+            #
+            # # initializing list of dicts with same keys as qc features and qc states
+            #
+            # features_iter = iter(sweep_features)
+            # if sweep_states[:] == self.sweep_states
+            # # updating sweep_features with rows that were dropped during run_qc()
+            # # usually these sweeps were terminated early
+            # for index, row in enumerate(sweep_features):
+            #     if sweep_features_full and sweep_features_full[0]['sweep_number'] == row['sweep_number']:
+            #         sweep_features[index].update(sweep_features_full.pop(0))
+            #         self.sweep_states[index] = sweep_states[index]
+            #     else:
+            #         sweep_features[index]['passed'] = False
+            #         self.sweep_states[index]['passed'] = False
+            #
+            # # TODO : add 'n/a' to sweep features and sweep states not included in auto-qc
+            # for index, row in data_set.sweep_table.iterrows():
+            #     if sweep_features and sweep_features[0]['sweep_number'] == index:
+            #         self.sweep_features[index] = sweep_features.pop(0)
+            #     else:
+            #         new_row = dict(row)
+            #         new_row.update({'tags': ["No auto QC"], 'passed': False})
+            #         self.sweep_features[index].update(new_row)
+            #         self.sweep_states[index] = {
+            #             'sweep_number': index, 'passed': None, 'reasons': ["no auto qc"]
+            #         }
 
             self.manual_qc_states = {
-                sweep["sweep_number"]: "default" for sweep in self.sweep_states
+                sweep['sweep_number']: "default" for sweep in self.sweep_states
             }
 
             self.end_commit_calculated.emit(
@@ -395,7 +437,7 @@ def extract_qc_features(data_set):
         # manual_values=cell_qc_manual_values
     )
     sweep_features = sweep_qc_features(data_set)
-    drop_tagged_sweeps(sweep_features)
+    # drop_tagged_sweeps(sweep_features)
     return cell_features, cell_tags, sweep_features
 
 
@@ -404,19 +446,22 @@ def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
     Outputs qc summary on a screen
     """
     cell_features = copy.deepcopy(cell_features)
-    sweep_features = copy.deepcopy(sweep_features)
+    sweep_features_full = copy.deepcopy(sweep_features)
+    # need to drop tagged sweeps because recordings stopped before the end
+    # of the experiment epoch will break qc_experiment()
+    drop_tagged_sweeps(sweep_features_full)
 
     cell_state, sweep_states = qc_experiment(
         ontology=stimulus_ontology,
         cell_features=cell_features,
-        sweep_features=sweep_features,
+        sweep_features=sweep_features_full,
         qc_criteria=qc_criteria
     )
     qc_summary(
-        sweep_features=sweep_features, 
+        sweep_features=sweep_features_full,
         sweep_states=sweep_states, 
         cell_features=cell_features, 
         cell_state=cell_state
     )
 
-    return cell_state, cell_features, sweep_states, sweep_features 
+    return cell_state, cell_features, sweep_states, sweep_features_full
