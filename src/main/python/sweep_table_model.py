@@ -73,24 +73,31 @@ class SweepTableModel(QAbstractTableModel):
         self._data = []
         self.endRemoveRows()
 
-        state_lookup = {state["sweep_number"]: state for state in sweep_states}
+        # state_lookup = {state["sweep_number"]: state for state in sweep_states}
         plotter = SweepPlotter(dataset, self.plot_config)
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
-        for sweep in sorted(sweep_features, key=lambda swp: swp["sweep_number"]):
+        for index, sweep in enumerate(sweep_features): # sorted(sweep_features, key=lambda swp: swp["sweep_number"]):
 
-            sweep_number = sweep["sweep_number"]
-            state = state_lookup[sweep_number]
+            # sweep_number = sweep["sweep_number"]
+            # state = state_lookup[sweep_number]
 
-            test_pulse_plots, experiment_plots = plotter.advance(sweep_number)
+            test_pulse_plots, experiment_plots = plotter.advance(index)
+
+            if sweep['passed']:
+                auto_qc_state = "passed"
+            elif sweep['passed'] is None:
+                auto_qc_state = "n/a"
+            else:
+                auto_qc_state = "failed"
 
             self._data.append([
-                sweep_number,
+                index,
                 sweep["stimulus_code"],
                 sweep["stimulus_name"],
-                "passed" if state["passed"] and sweep["passed"] else "failed",  # auto qc
-                manual_qc_states[sweep_number],
-                format_fail_tags(sweep["tags"] + state["reasons"]),     # fail tags
+                auto_qc_state,
+                manual_qc_states[index],
+                format_fail_tags(sweep["tags"] + sweep_states[index]['reasons']),     # fail tags
                 test_pulse_plots,
                 experiment_plots
             ])
@@ -140,7 +147,6 @@ class SweepTableModel(QAbstractTableModel):
         if role == QtCore.Qt.BackgroundRole and index.column() == 3:
             if self._data[index.row()][3] == "failed":
                 return self.FAIL_BGCOLOR
-
 
     def headerData(
         self,

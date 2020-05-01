@@ -5,8 +5,8 @@ from ipfx.error import FeatureError
 from ipfx.data_set_features import extract_data_set_features
 from error_handling import exception_message
 
-class FxData(QObject):
 
+class FxData(QObject):
     state_outdated = pyqtSignal(name="state_outdated")
     new_state_set = pyqtSignal(dict, name="new_state_set")
 
@@ -15,16 +15,19 @@ class FxData(QObject):
     def __init__(self):
         super().__init__()
         self._state_out_of_date: bool = False
+        self.input_nwb_file = None
+        self.ontology = None
+        self.sweep_info = None
+        self.cell_info = None
+        self.feature_data = None
 
     def out_of_date(self):
         self.state_outdated.emit()
         self._state_out_of_date = True
 
-    
     def new_state(self):
         self.new_state_set.emit(self.feature_data)
         self._state_out_of_date = False
-
 
     def set_fx_parameters(self,
                           nwb_path,
@@ -43,6 +46,9 @@ class FxData(QObject):
         pre_fx_data.data_changed.connect(self.set_fx_parameters)
 
     def run_feature_extraction(self):
+        # TODO fix big where current clamp sweeps that fail auto QC,
+        #  but pass manual QC break feature extraction (mainly Search and core1 auto-fails)
+        #  (Ramps, core 2 and Vclamps throw errors, but don't break things)
         self.status_message.emit("Computing features, please wait.")
         drop_failed_sweeps(self.sweep_info)
         data_set = create_data_set(sweep_info=self.sweep_info,

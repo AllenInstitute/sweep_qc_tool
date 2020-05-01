@@ -299,6 +299,8 @@ class PreFxData(QObject):
             validate_stim=True
         )
 
+        sweep_table = data_set.sweep_table.sort_values('sweep_number')
+
         # cell_features: overall QC features for the cell
         # cell_tags: QC details about the cell (e.g. 'Blowout is not available'
         # sweep_features: list of dictionaries containing sweep features for
@@ -324,72 +326,38 @@ class PreFxData(QObject):
             self.cell_tags = cell_tags
             self.cell_state = cell_state
 
-            num_sweeps = len(data_set.sweep_table)
+            num_sweeps = len(sweep_table)
 
+            # initializing sweep qc features
             self.sweep_features = [
                 dict.fromkeys(sweep_features_full[0].keys())
                 for _ in range(num_sweeps)
             ]
 
+            # initializing sweep auto qc states
             self.sweep_states = [{'passed': None, 'reasons': [], 'sweep_number': x}
                                  for x in range(num_sweeps)]
 
-            features_full_iter = iter(sweep_features_full)
-            features_iter = iter(sweep_features)
-
-            for index, row in enumerate(features_full_iter):
+            # populating sweep_features and sweep_states with sweeps that made it through auto qc
+            for index, row in enumerate(iter(sweep_features_full)):
                 self.sweep_features[row['sweep_number']] = row
                 self.sweep_states[row['sweep_number']] = sweep_states[index]
 
-            for row in features_iter:
+            # populating sweep_features and sweep_states with rows that were dropped during run_qc()
+            # usually these sweeps were terminated early
+            for row in iter(sweep_features):
                 if self.sweep_features[row['sweep_number']]['passed'] is None:
                     self.sweep_features[row['sweep_number']].update(row)
                     self.sweep_features[row['sweep_number']]['passed'] = False
                     self.sweep_states[row['sweep_number']]['passed'] = False
 
-            for index, row in data_set.sweep_table.iterrows():
+            # populating sweep_features and sweep_states with rows that were not included in auto qc
+            for index, row in sweep_table.iterrows():
                 if self.sweep_features[index]['sweep_number'] is None:
                     self.sweep_features[index].update(row)
                     self.sweep_features[index]['tags'] = []
+                    # sweep states with no auto QC have the "None" tag for auto-qc state
                     self.sweep_states[index]['reasons'] = ['No auto QC']
-
-
-            #
-            # for index, row in enumerate(features_full_iter):
-            #     if row['sweep_number'] == sweep_features[index]['row']:
-            #         sweep_features[index] = row
-            #     else:
-            #         sweep_features[index]['passed'] = False
-            #
-            # for index, row in enumerate(states_iter):
-            #     if row['sweep_number'] == self.sweep_states:
-            #         self.sweep_states[index] = row
-            #
-            # # initializing list of dicts with same keys as qc features and qc states
-            #
-            # features_iter = iter(sweep_features)
-            # if sweep_states[:] == self.sweep_states
-            # # updating sweep_features with rows that were dropped during run_qc()
-            # # usually these sweeps were terminated early
-            # for index, row in enumerate(sweep_features):
-            #     if sweep_features_full and sweep_features_full[0]['sweep_number'] == row['sweep_number']:
-            #         sweep_features[index].update(sweep_features_full.pop(0))
-            #         self.sweep_states[index] = sweep_states[index]
-            #     else:
-            #         sweep_features[index]['passed'] = False
-            #         self.sweep_states[index]['passed'] = False
-            #
-            # # TODO : add 'n/a' to sweep features and sweep states not included in auto-qc
-            # for index, row in data_set.sweep_table.iterrows():
-            #     if sweep_features and sweep_features[0]['sweep_number'] == index:
-            #         self.sweep_features[index] = sweep_features.pop(0)
-            #     else:
-            #         new_row = dict(row)
-            #         new_row.update({'tags': ["No auto QC"], 'passed': False})
-            #         self.sweep_features[index].update(new_row)
-            #         self.sweep_states[index] = {
-            #             'sweep_number': index, 'passed': None, 'reasons': ["no auto qc"]
-            #         }
 
             self.manual_qc_states = {
                 sweep['sweep_number']: "default" for sweep in self.sweep_states
