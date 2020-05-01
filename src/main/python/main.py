@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHeaderView,
     QVBoxLayout,
-    QLabel
+    QLabel,
+    QCheckBox
 )
 from pyqtgraph import setConfigOption
 
@@ -41,14 +42,21 @@ class SweepPage(QWidget):
         """
 
         super().__init__()
-
-        self.sweep_view = SweepTableView(self.colnames)
+        # abstract model of the sweep table that is represented by sweep_view
         self.sweep_model = SweepTableModel(self.colnames, sweep_plot_config)
 
+        # view of the sweep table that the user sees
+        self.sweep_view = SweepTableView(self.colnames)
         self.sweep_view.setModel(self.sweep_model)
+
+        # check box that filters sweeps down to those that go through auto-qc pipeline
+        self.check = QCheckBox("Filtered Sweeps")
+        self.check.setChecked(True)
+        self.check.stateChanged.connect(self.sweep_view.filter_auto_qc)
 
         layout = QVBoxLayout()
         layout.addWidget(self.sweep_view)
+        layout.addWidget(self.check)
         self.setLayout(layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)

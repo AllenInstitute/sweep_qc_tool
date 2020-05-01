@@ -1,7 +1,8 @@
 from typing import Optional
 
+
 from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget
-from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QModelIndex, Qt
 
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
@@ -126,3 +127,16 @@ class SweepTableView(QTableView):
         popup.setLayout(layout)
         popup.move(left, top)
         popup.exec()
+
+    def filter_auto_qc(self, state):
+        """ Filters the table down to sweeps that went through auto QC pipeline
+        if the button is checked
+
+        Parameters
+        ----------
+            state : the state that the button is in (check/unchecked)
+        """
+        if state == Qt.Checked:
+            print('Checked')
+        else:
+            print('Unchecked')

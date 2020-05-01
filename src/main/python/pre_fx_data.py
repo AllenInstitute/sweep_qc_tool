@@ -344,13 +344,14 @@ class PreFxData(QObject):
             self.sweep_states = [{'passed': None, 'reasons': [], 'sweep_number': x}
                                  for x in range(num_sweeps)]
 
-            # populating sweep_features and sweep_states with sweeps that made it through auto qc
+            # populating sweep_features and sweep_states with
+            # sweeps that made it through auto qc
             for index, row in enumerate(sweep_features_full):
                 self.sweep_features[row['sweep_number']] = row
                 self.sweep_states[row['sweep_number']] = sweep_states[index]
 
-            # populating sweep_features and sweep_states with rows that were dropped during run_qc()
-            # usually these sweeps were terminated early
+            # populating sweep_features and sweep_states with
+            # rows that were dropped during run_qc() (usually terminated early)
             for row in sweep_features:
                 if self.sweep_features[row['sweep_number']]['passed'] is None:
                     self.sweep_features[row['sweep_number']].update(row)
@@ -358,7 +359,8 @@ class PreFxData(QObject):
                     # weeded out after first round of auto-qc
                     self.sweep_states[row['sweep_number']]['passed'] = False
 
-            # populating sweep_features and sweep_states with rows that were not included in auto qc
+            # populating sweep_features and sweep_states with
+            # rows that were not included in auto qc
             for index, row in sweep_table.iterrows():
                 if self.sweep_features[index]['sweep_number'] is None:
                     self.sweep_features[index].update(row)
@@ -402,9 +404,9 @@ class PreFxData(QObject):
         if new_state == "default":
             self.sweep_states[index] = copy.deepcopy(self.initial_sweep_states[index])
             self.sweep_features[index] = copy.deepcopy(self.initial_sweep_features[index])
-            
+
         # updating sweep states and sweep features if this is an auto qc sweep
-        if new_state == "passed":
+        elif new_state == "passed":
             self.sweep_states[index]['passed'] = True
             self.sweep_states[index]['reasons'].append("Manually passed")
             # deals with sweeps that break feature extraction
@@ -418,6 +420,11 @@ class PreFxData(QObject):
             if self.sweep_features[index]['passed'] is not None:
                 self.sweep_features[index]['passed'] = False
 
+        # this shouldn't happen, but it's here just in case
+        else:
+            logging.warning(f"Unknown manual QC state: {new_state}"
+                            f"for sweep number {index}")
+
         self.data_changed.emit(self.nwb_path,
                                self.stimulus_ontology,
                                self.sweep_features,
@@ -430,7 +437,6 @@ def extract_qc_features(data_set):
         # manual_values=cell_qc_manual_values
     )
     sweep_features = sweep_qc_features(data_set)
-    # drop_tagged_sweeps(sweep_features)
     return cell_features, cell_tags, sweep_features
 
 
@@ -453,7 +459,7 @@ def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
     qc_summary(
         sweep_features=sweep_features_full,
         sweep_states=sweep_states, 
-        cell_features=cell_features, 
+        cell_features=cell_features,
         cell_state=cell_state
     )
 
