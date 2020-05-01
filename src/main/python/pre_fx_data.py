@@ -53,15 +53,21 @@ class PreFxData(QObject):
         self._stimulus_ontology: Optional[StimulusOntology] = None
 
         # QC related data
+        # criteria used with auto QC
         self._qc_criteria: Optional[Dict] = None
+        # manual QC states selected by the user
         self.manual_qc_states: Dict[int, str] = {}
-        # QC info at the cell (experiment) level
+        # QC info and states at the cell (experiment) level
         self.cell_features: Optional[dict] = None
         self.cell_tags: Optional[list] = None
         self.cell_state: Optional[dict] = None
-        # QC info at the sweep level
+        # QC info and states at the sweep level
         self.sweep_features: Optional[list] = None
         self.sweep_states: Optional[list] = None
+        # backup copies of QC info and states
+        # used if user changes manual state back to 'default
+        self.initial_sweep_features: Optional[list] = None
+        self.initial_sweep_states: Optional[list] = None
 
     def _notifying_setter(
         self, 
@@ -360,6 +366,9 @@ class PreFxData(QObject):
                     # sweep states with no auto QC have the "None" tag for auto-qc state
                     self.sweep_states[index]['reasons'] = ['No auto QC']
 
+            self.initial_sweep_features = copy.deepcopy(self.sweep_features)
+            self.initial_sweep_states = copy.deepcopy(self.sweep_states)
+
             self.manual_qc_states = {
                 sweep['sweep_number']: "default" for sweep in self.sweep_states
             }
@@ -373,39 +382,47 @@ class PreFxData(QObject):
                                self.sweep_features,
                                self.cell_features)
 
-    def on_manual_qc_state_updated(self, sweep_number: int, new_state: str):
+    def on_manual_qc_state_updated(self, index: int, new_state: str):
         """ Takes in new manual QC state and updates sweep_states and
         sweep features appropriately. Note that sweep features that do not get
         passed the first round of auto qc are left as none in order to avoid
         breaking feature extraction.
 
         Parameters:
-            sweep_number : int
+            index : int
                 Sweep number that is being updated. Used as an index when
                     addressing sweep_States and sweep_features
             new_state : str
                 String specifying manual QC state "default", "passed", or "failed"
         """
-        self.manual_qc_states[sweep_number] = new_state
+        # updating manual qc states
+        self.manual_qc_states[index] = new_state
 
+        # resetting states and features to initial values if user selected "default" again
+        if new_state == "default":
+            self.sweep_states[index] = copy.deepcopy(self.initial_sweep_states[index])
+            self.sweep_features[index] = copy.deepcopy(self.initial_sweep_features[index])
+            
+        # updating sweep states and sweep features if this is an auto qc sweep
         if new_state == "passed":
-            self.sweep_states[sweep_number]['passed'] = True
-            self.sweep_states[sweep_number]['reasons'].append("Manually passed")
+            self.sweep_states[index]['passed'] = True
+            self.sweep_states[index]['reasons'].append("Manually passed")
             # deals with sweeps that break feature extraction
-            if self.sweep_features[sweep_number]['passed'] is not None:
-                self.sweep_features[sweep_number]['passed'] = True
+            if self.sweep_features[index]['passed'] is not None:
+                self.sweep_features[index]['passed'] = True
 
         elif new_state == "failed":
-            self.sweep_states[sweep_number]['passed'] = False
-            self.sweep_states[sweep_number]['reasons'].append("Manually failed")
+            self.sweep_states[index]['passed'] = False
+            self.sweep_states[index]['reasons'].append("Manually failed")
             # deals with sweeps that break feature extraction
-            if self.sweep_features[sweep_number]['passed'] is not None:
-                self.sweep_features[sweep_number]['passed'] = False
+            if self.sweep_features[index]['passed'] is not None:
+                self.sweep_features[index]['passed'] = False
 
         self.data_changed.emit(self.nwb_path,
                                self.stimulus_ontology,
                                self.sweep_features,
                                self.cell_features)
+
 
 def extract_qc_features(data_set):
     cell_features, cell_tags = cell_qc_features(
