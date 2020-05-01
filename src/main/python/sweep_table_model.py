@@ -45,7 +45,6 @@ class SweepTableModel(QAbstractTableModel):
         data.end_commit_calculated.connect(self.on_new_data)
         self.qc_state_updated.connect(data.on_manual_qc_state_updated)
 
-
     def on_new_data(
         self, 
         sweep_features: List[Dict], 
@@ -77,16 +76,12 @@ class SweepTableModel(QAbstractTableModel):
         plotter = SweepPlotter(dataset, self.plot_config)
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
-        for index, sweep in enumerate(sweep_features): # sorted(sweep_features, key=lambda swp: swp["sweep_number"]):
-
-            # sweep_number = sweep["sweep_number"]
-            # state = state_lookup[sweep_number]
-
+        for index, sweep in enumerate(sweep_features):
             test_pulse_plots, experiment_plots = plotter.advance(index)
 
-            if sweep['passed']:
+            if sweep_states[index]['passed']:
                 auto_qc_state = "passed"
-            elif sweep['passed'] is None:
+            elif sweep_states[index] is None:
                 auto_qc_state = "n/a"
             else:
                 auto_qc_state = "failed"
@@ -109,7 +104,7 @@ class SweepTableModel(QAbstractTableModel):
         """
         return len(self._data)
 
-    def columnCount(self, *args, **kwargs) -> int :
+    def columnCount(self, *args, **kwargs) -> int:
         """ The number of sweep characteristics
         """
         return len(self.colnames)
@@ -183,7 +178,7 @@ class SweepTableModel(QAbstractTableModel):
         """ Updates the data at the supplied index.
         """
 
-        current: str = self._data[index.row()][index.column()]
+        current = self._data[index.row()][index.column()]
 
         if index.isValid() \
                 and isinstance(value, str) \
@@ -197,6 +192,7 @@ class SweepTableModel(QAbstractTableModel):
             return True
 
         return False
+
 
 def format_fail_tags(tags: List[str]) -> str:
     return "\n\n".join(tags)
