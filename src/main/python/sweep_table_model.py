@@ -1,4 +1,4 @@
-from typing import Dict, List, Any, Sequence
+from typing import Optional, Dict, List, Any, Sequence
 
 from PyQt5.QtCore import (
     QAbstractTableModel, QModelIndex, pyqtSignal
@@ -29,6 +29,7 @@ class SweepTableModel(QAbstractTableModel):
         self._data: List[List[Any]] = []
 
         self.plot_config = plot_config
+        self.sweep_features: Optional[list] = None
     
     def connect(self, data: PreFxData):
         """ Set up signals and slots for communication with the underlying data store.
@@ -67,6 +68,8 @@ class SweepTableModel(QAbstractTableModel):
             The underlying data. Used to extract sweepwise voltage traces
 
         """
+        # grabbing sweep features so that sweep table view can filter based on these values
+        self.sweep_features = sweep_features
 
         self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
         self._data = []

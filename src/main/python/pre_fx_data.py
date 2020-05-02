@@ -368,6 +368,8 @@ class PreFxData(QObject):
                     # sweep states with no auto QC have the "None" tag for auto-qc state
                     self.sweep_states[index]['reasons'] = ['No auto QC']
 
+            # making a copy of these initial values so they can be reset if
+            # user changes manual qc state away from 'default' and back
             self.initial_sweep_features = copy.deepcopy(self.sweep_features)
             self.initial_sweep_states = copy.deepcopy(self.sweep_states)
 
