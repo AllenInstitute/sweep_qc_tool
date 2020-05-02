@@ -16,13 +16,13 @@ from PyQt5.QtCore import pyqtSignal
 from pre_fx_data import PreFxData
 from fx_data import FxData
 
+
 class PreFxController(QWidget):
 
     selected_stimulus_ontology_path = pyqtSignal(str, name="selected_stimulus_ontology_path")
     selected_qc_criteria_path = pyqtSignal(str, name="selected_qc_criteria_path")
     selected_data_set_path = pyqtSignal(str, name="selected_data_set_path")
     selected_manual_states_path = pyqtSignal(str, name="selected_manual_states_path")
-
 
     def __init__(self, *args, **kwargs):
         """PreFxController provides an interface between GUI elements, such as 

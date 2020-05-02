@@ -132,12 +132,11 @@ class SweepTableView(QTableView):
         """ Filters the table down to sweeps that went through auto QC pipeline
         if the button is checked
 
-
         Parameters
         ----------
             state : the state that the button is in (check/unchecked)
         """
-        if state == Qt.Checked:
+        if state == Qt.Checked or state is True:
             for index, row in enumerate(self.model().sweep_features):
                 if row['passed'] is None:
                     self.hideRow(index)

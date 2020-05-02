@@ -23,6 +23,7 @@ from fx_data import FxData
 from pre_fx_controller import PreFxController
 from cell_feature_page import CellFeaturePage
 
+
 class SweepPage(QWidget):
 
     colnames: tuple = (
@@ -50,13 +51,11 @@ class SweepPage(QWidget):
         self.sweep_view.setModel(self.sweep_model)
 
         # check box that filters sweeps down to those that go through auto-qc pipeline
-        self.check = QCheckBox("Filtered Sweeps")
-        self.check.setChecked(True)
-        self.check.stateChanged.connect(self.sweep_view.filter_auto_qc)
+        self.auto_qc_filter_checkbox = QCheckBox("Auto QC filter")
 
         layout = QVBoxLayout()
         layout.addWidget(self.sweep_view)
-        layout.addWidget(self.check)
+        layout.addWidget(self.auto_qc_filter_checkbox)
         self.setLayout(layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -71,8 +70,13 @@ class SweepPage(QWidget):
             Will be used as the underlying data store (via this object's model).
 
         """
-
+        # connect model to raw data
         self.sweep_model.connect(data)
+
+        # connect model to self and sweep table view
+        self.sweep_model.new_data.connect(self.sweep_view.filter_auto_qc)
+        self.sweep_model.new_data.connect(self.auto_qc_filter_checkbox.setChecked)
+        self.auto_qc_filter_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
 
 
 class PlotPage(QWidget):
@@ -104,7 +108,6 @@ class MainWindow(QMainWindow):
         # Create tab widget & set tabs as a central widget
         tab_widget = QTabWidget()
         self.setCentralWidget(tab_widget)
-
 
     def insert_tabs(
         self, 

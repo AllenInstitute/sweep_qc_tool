@@ -15,6 +15,7 @@ from sweep_plotter import SweepPlotter, SweepPlotConfig
 class SweepTableModel(QAbstractTableModel):
 
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
+    new_data = pyqtSignal(bool, name="new_data")
 
     FAIL_BGCOLOR = QColor(255, 225, 225)
 
@@ -84,7 +85,7 @@ class SweepTableModel(QAbstractTableModel):
 
             if sweep_states[index]['passed']:
                 auto_qc_state = "passed"
-            elif sweep_states[index] is None:
+            elif sweep_states[index]['passed'] is None:
                 auto_qc_state = "n/a"
             else:
                 auto_qc_state = "failed"
@@ -101,6 +102,7 @@ class SweepTableModel(QAbstractTableModel):
             ])
 
         self.endInsertRows()
+        self.new_data.emit(True)
 
     def rowCount(self, *args, **kwargs):
         """ The number of sweeps
