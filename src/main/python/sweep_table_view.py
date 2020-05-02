@@ -55,6 +55,7 @@ class SweepTableView(QTableView):
         super(SweepTableView, self).setModel(model)
         model.rowsInserted.connect(self.persist_qc_editor)
         model.rowsInserted.connect(self.resize_to_content)
+        # TODO connect model.rowsRemoved?
 
     def resize_to_content(self, *args, **kwargs):
         """ This function just exists so that we can connect signals with 

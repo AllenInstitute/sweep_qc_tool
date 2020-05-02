@@ -332,6 +332,7 @@ class PreFxData(QObject):
             self.cell_tags = cell_tags
             self.cell_state = cell_state
 
+            # TODO move below section to a new function for readability? ####
             num_sweeps = len(sweep_table)
 
             # initializing sweep qc features
@@ -376,6 +377,7 @@ class PreFxData(QObject):
             self.manual_qc_states = {
                 sweep['sweep_number']: "default" for sweep in self.sweep_states
             }
+            # TODO move above section to a new function for readability? ####
 
             self.end_commit_calculated.emit(
                 self.sweep_features, self.sweep_states, self.manual_qc_states, self.data_set

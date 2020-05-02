@@ -72,6 +72,7 @@ class SweepTableModel(QAbstractTableModel):
         # grabbing sweep features so that sweep table view can filter based on these values
         self.sweep_features = sweep_features
 
+        # TODO call SweepTableView.rowsAboutToBeRemoved() or .rowCountChanged() here?
         self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
         self._data = []
         self.endRemoveRows()
@@ -102,6 +103,7 @@ class SweepTableModel(QAbstractTableModel):
             ])
 
         self.endInsertRows()
+        # TODO fix bug where rows aren't removed in SweepTableView when a new data set is loaded
         self.new_data.emit(True)
 
     def rowCount(self, *args, **kwargs):

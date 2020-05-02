@@ -169,7 +169,6 @@ class MainWindow(QMainWindow):
 
         self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
 
-
     def setup_status_bar(self, pre_fx_data: PreFxData, fx_data: FxData):
         """ Sets up a status bar, which reports the current state of the app. 
         Connects this status bar to the underlying models
@@ -302,7 +301,3 @@ if __name__ == '__main__':
 
     exit_code = app.run()
     sys.exit(exit_code)
-
-
-
-
