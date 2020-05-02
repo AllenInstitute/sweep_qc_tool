@@ -140,9 +140,7 @@ class SweepTableView(QTableView):
             for index, row in enumerate(self.model().sweep_features):
                 if row['passed'] is None:
                     self.hideRow(index)
-            print('Checked')
         else:
             for index, row in enumerate(self.model().sweep_features):
                 if row['passed'] is None:
                     self.showRow(index)
-            print('Unchecked')
