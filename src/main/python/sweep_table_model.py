@@ -1,7 +1,7 @@
 from typing import Optional, Dict, List, Any, Sequence
 
 from PyQt5.QtCore import (
-    QAbstractTableModel, QModelIndex, pyqtSignal
+    QAbstractTableModel, QModelIndex, pyqtSignal   #, pyqtSlot
 )
 from PyQt5.QtGui import QColor
 from PyQt5 import QtCore
@@ -15,6 +15,8 @@ from sweep_plotter import SweepPlotter, SweepPlotConfig
 class SweepTableModel(QAbstractTableModel):
 
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
+    # clear_signal = pyqtSignal(QModelIndex, int, int, name="clear_table")
+    # row_count_changed = pyqtSignal(int, int, name="row_count_changed")
     new_data = pyqtSignal(bool, name="new_data")
 
     FAIL_BGCOLOR = QColor(255, 225, 225)
@@ -69,13 +71,22 @@ class SweepTableModel(QAbstractTableModel):
             The underlying data. Used to extract sweepwise voltage traces
 
         """
+
         # grabbing sweep features so that sweep table view can filter based on these values
         self.sweep_features = sweep_features
 
         # TODO call SweepTableView.rowsAboutToBeRemoved() or .rowCountChanged() here?
-        self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
-        self._data = []
-        self.endRemoveRows()
+        # self.clear_signal.emit(QModelIndex, 1, self.rowCount())
+        # initial_row_count = self.rowCount()
+        # self.row
+        if self.rowCount() > 0:
+            # self.rowsAboutToBeRemoved(QModelIndex, 1, self.rowCount())
+            # initial_row_count = self.rowCount()
+            self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
+            # self.clear_signal.emit(QModelIndex, 1, self.rowCount())
+            self._data = []
+            self.endRemoveRows()
+            # self.rowsRemoved(QModelIndex, 1, initial_row_count)
 
         # state_lookup = {state["sweep_number"]: state for state in sweep_states}
         plotter = SweepPlotter(dataset, self.plot_config)
@@ -104,6 +115,7 @@ class SweepTableModel(QAbstractTableModel):
 
         self.endInsertRows()
         # TODO fix bug where rows aren't removed in SweepTableView when a new data set is loaded
+        # self.row_count_changed.emit(initial_row_count, self.rowCount())
         self.new_data.emit(True)
 
     def rowCount(self, *args, **kwargs):
@@ -193,12 +205,16 @@ class SweepTableModel(QAbstractTableModel):
                 and role == QtCore.Qt.EditRole \
                 and value != current:
             self._data[index.row()][index.column()] = value
+            # qc_state_updated may be doing the same thing as .dataChanged()
             self.qc_state_updated.emit(
                 self._data[index.row()][self.column_map["sweep number"]], value
             )
             return True
 
         return False
+
+    # def clear_table(self):
+
 
 
 def format_fail_tags(tags: List[str]) -> str:

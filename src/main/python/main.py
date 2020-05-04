@@ -70,13 +70,17 @@ class SweepPage(QWidget):
             Will be used as the underlying data store (via this object's model).
 
         """
+        # connections between model and self
+        self.sweep_model.new_data.connect(self.auto_qc_filter_checkbox.setChecked)
+        self.auto_qc_filter_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
+
         # connect model to raw data
         self.sweep_model.connect(data)
 
-        # connect model to self and sweep table view
+        # connections between model and view
+        # self.sweep_model.clear_signal.connect(self.sweep_view.rowsAboutToBeRemoved)
+        # self.sweep_model.row_count_changed.connect(self.sweep_view.rowCountChanged)
         self.sweep_model.new_data.connect(self.sweep_view.filter_auto_qc)
-        self.sweep_model.new_data.connect(self.auto_qc_filter_checkbox.setChecked)
-        self.auto_qc_filter_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
 
 
 class PlotPage(QWidget):

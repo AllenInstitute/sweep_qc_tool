@@ -129,13 +129,14 @@ class SweepTableView(QTableView):
         popup.move(left, top)
         popup.exec()
 
-    def filter_auto_qc(self, state):
+    def filter_auto_qc(self, state: Qt.Checked or bool):
         """ Filters the table down to sweeps that went through auto QC pipeline
         if the button is checked
 
         Parameters
         ----------
-            state : the state that the button is in (check/unchecked)
+            state : Qt.Checked or bool
+                the state of the checkbox; True = checked; Flase = unchecked)
         """
         if state == Qt.Checked or state is True:
             for index, row in enumerate(self.model().sweep_features):
@@ -145,3 +146,17 @@ class SweepTableView(QTableView):
             for index, row in enumerate(self.model().sweep_features):
                 if row['passed'] is None:
                     self.showRow(index)
+
+    # def clear_table(self, index: QModelIndex, start: int, end: int):
+    #     """ Notifies the table view that the table is about to be cleared
+    #
+    #     Parameters
+    #     ----------
+    #         index : QModelIndex
+    #             the index for the clearing operation
+    #         start: int
+    #             row index of first row to be removed
+    #         end : int
+    #             row index of the last row to be removed
+    #     """
+    #     self.rowsAboutToBeRemoved(index, start, end)
