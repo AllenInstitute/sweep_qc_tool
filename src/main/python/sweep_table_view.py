@@ -138,14 +138,15 @@ class SweepTableView(QTableView):
             state : Qt.Checked or bool
                 the state of the checkbox; True = checked; Flase = unchecked)
         """
-        if state == Qt.Checked or state is True:
-            for index, row in enumerate(self.model().sweep_features):
-                if row['passed'] is None:
-                    self.hideRow(index)
-        else:
-            for index, row in enumerate(self.model().sweep_features):
-                if row['passed'] is None:
-                    self.showRow(index)
+        if self.model().rowCount() > 0:
+            if state == Qt.Checked or state is True:
+                for index, row in enumerate(self.model().sweep_features):
+                    if row['passed'] is None:
+                        self.hideRow(index)
+            else:
+                for index, row in enumerate(self.model().sweep_features):
+                    if row['passed'] is None:
+                        self.showRow(index)
 
     # def clear_table(self, index: QModelIndex, start: int, end: int):
     #     """ Notifies the table view that the table is about to be cleared

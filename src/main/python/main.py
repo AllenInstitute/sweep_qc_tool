@@ -107,7 +107,7 @@ class MainWindow(QMainWindow):
 
         # Configure window
         self.setWindowTitle("Ephys Sweep QC Tool")
-        self.resize(800, 1000)
+        self.resize(1000, 1000)
 
         # Create tab widget & set tabs as a central widget
         tab_widget = QTabWidget()
