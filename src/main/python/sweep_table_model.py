@@ -71,7 +71,6 @@ class SweepTableModel(QAbstractTableModel):
             The underlying data. Used to extract sweepwise voltage traces
 
         """
-
         # grabbing sweep features so that sweep table view can filter based on these values
         self.sweep_features = sweep_features
 
@@ -93,7 +92,6 @@ class SweepTableModel(QAbstractTableModel):
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
         for index, sweep in enumerate(sweep_features):
-            test_pulse_plots, experiment_plots = plotter.advance(index)
 
             if sweep_states[index]['passed']:
                 auto_qc_state = "passed"
@@ -101,6 +99,8 @@ class SweepTableModel(QAbstractTableModel):
                 auto_qc_state = "n/a"
             else:
                 auto_qc_state = "failed"
+
+            test_pulse_plots, experiment_plots = plotter.advance(index)
 
             self._data.append([
                 index,

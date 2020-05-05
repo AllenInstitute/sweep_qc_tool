@@ -103,11 +103,11 @@ class SweepTableView(QTableView):
             return
 
         index_rect = self.visualRect(index)
-        self.popup_plot(
-            self.model().data(index).full(),
-            index_rect.left(),
-            index_rect.top()
-        )
+        self.popup_plot(self.model().data(index).full(), left=100, top=100)
+        # commented this out so that the popup plot starts in a nicer place
+        #     index_rect.left(),
+        #     index_rect.top()
+        # )
 
     def popup_plot(self, graph: QWidget, left: int = 0, top: int = 0):
         """ Make a popup with a single widget, which ought to be a plotter for 
@@ -147,6 +147,9 @@ class SweepTableView(QTableView):
                 for index, row in enumerate(self.model().sweep_features):
                     if row['passed'] is None:
                         self.showRow(index)
+
+    def filter_search(self, state: Qt.Checked or bool):
+        ...
 
     # def clear_table(self, index: QModelIndex, start: int, end: int):
     #     """ Notifies the table view that the table is about to be cleared

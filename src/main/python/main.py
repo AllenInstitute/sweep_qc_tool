@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHeaderView,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QCheckBox
 )
@@ -52,11 +53,16 @@ class SweepPage(QWidget):
 
         # check box that filters sweeps down to those that go through auto-qc pipeline
         self.auto_qc_filter_checkbox = QCheckBox("Auto QC filter")
+        self.search_filter_checkbox = QCheckBox("Search")
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.sweep_view)
-        layout.addWidget(self.auto_qc_filter_checkbox)
-        self.setLayout(layout)
+        vbox_layout = QVBoxLayout()
+        vbox_layout.addWidget(self.sweep_view)
+        hbox_layout = QHBoxLayout()
+        vbox_layout.addLayout(hbox_layout)
+
+        hbox_layout.addWidget(self.auto_qc_filter_checkbox)
+        hbox_layout.addWidget(self.search_filter_checkbox)
+        self.setLayout(vbox_layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -72,7 +78,9 @@ class SweepPage(QWidget):
         """
         # connections between model and self
         self.sweep_model.new_data.connect(self.auto_qc_filter_checkbox.setChecked)
+        self.sweep_model.new_data.connect(self.search_filter_checkbox.setChecked)
         self.auto_qc_filter_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
+        self.search_filter_checkbox.stateChanged.connect(self.sweep_view.filter_search)
 
         # connect model to raw data
         self.sweep_model.connect(data)
