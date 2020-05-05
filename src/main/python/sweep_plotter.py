@@ -37,25 +37,37 @@ class SweepPlotConfig(NamedTuple):
 
 
 class PlotData(NamedTuple):
-    """ Contains numpy arrays for each type of data: stimulus, response, time"""
+    """ Contains numpy arrays for each type of data: stimulus, response, time.
+    This is needed due to ensure plotting doesn't break when different sampling
+    rates are used in previous and initial test pulses."""
     stimulus: np.ndarray
     response: np.ndarray
     time: np.ndarray
 
 
 class PopupPlotter:
+    """ Stores data needed to make an interactive plot and generates it on __call__()"""
     __slots__ = ['plot_data', 'sweep_number', 'y_label']
 
     def __init__(self, plot_data: PlotData, sweep_number: int, y_label: str):
+        """ Displays an interactive plot of a sweep
+
+        Parameters
+        ----------
+        plot_data : named tuple with raw data for plotting
+        sweep_number : sweep number used in naming the plot
+        y_label: label for the y-axis (mV or pA)
+        """
         self.plot_data = plot_data
         self.sweep_number = sweep_number
         self.y_label = y_label
 
     def make_graph(self):
+        """ Generate an interactive plot widget from this plotter's data"""
         graph = PlotWidget()
-
         plot = graph.getPlotItem()
 
+        plot.addLegend()
         plot.setLabel("left", self.y_label)
         plot.setLabel("bottom", "time (s)")
 
@@ -66,6 +78,8 @@ class PopupPlotter:
         return graph
 
     def __call__(self):
+        """ Generate an interactive plot widget from this plotter's data"""
+
         return self.make_graph()
 
 
@@ -82,18 +96,18 @@ class ExperimentPopupPlotter(PopupPlotter):
 
         Parameters
         ----------
-        time : in seconds. Forms the domain of the plot
-        response : in mV
-        baseline: in mV
+        plot_data : named tuple with raw data for plotting
+        baseline: baseline mean of the initial response in mV or pA
+        sweep_number : sweep number used in naming the plot
+        y_label: label for the y-axis (mV or pA)
+
         """
         super().__init__(plot_data=plot_data, sweep_number=sweep_number, y_label=y_label)
 
         self.baseline = baseline
 
     def __call__(self) -> PlotWidget:
-        """ Generate an interactive pyqtgraph plot widget from this plotter's
-        data
-        """
+        """ Generate an interactive plot widget from this plotter's data """
 
         graph = self.make_graph()
         plot = graph.getPlotItem()
@@ -125,27 +139,24 @@ class PulsePopupPlotter(PopupPlotter):
 
         Parameters
         ----------
-        time : in seconds. Forms the domain of the plot
-        response : in mV or pA. Response trace from this sweep
-        previous : in mV or pA. Response trace from the prior sweep, or None if this is
-            the first sweep.
-        initial : in mV or pA. Response trace from the first sweep, or None if this is
-            the first sweep.
-        sweep_number : identifier for this sweep
+        plot_data : named tuple with raw data for plotting
+        previous_plot_data : named tuple with previous test pulse data
+        initial_plot_data : named tuple with initial test pulse data
+        sweep_number : sweep number used in naming the plot
+        y_label: label for the y-axis (mV or pA)
 
         """
+
         super().__init__(plot_data=plot_data, sweep_number=sweep_number, y_label=y_label)
 
         self.previous_plot_data = previous_plot_data
         self.initial_plot_data = initial_plot_data
 
     def __call__(self) -> PlotWidget:
-        """ Generate an interactive pyqtgraph plot widget from this plotter's
-        data
-        """
+        """ Generate an interactive plot widget from this plotter's data"""
+
         graph = self.make_graph()
         plot = graph.getPlotItem()
-        plot.addLegend()
 
         if self.initial_plot_data is not None:
             plot.plot(self.initial_plot_data.time, self.initial_plot_data.response,
@@ -153,7 +164,7 @@ class PulsePopupPlotter(PopupPlotter):
                       name="initial")
 
         if self.previous_plot_data is not None:
-            plot.plot(self.previous_plot_data.time, self.previous_plot_data.stimulus,
+            plot.plot(self.previous_plot_data.time, self.previous_plot_data.response,
                       pen=mkPen(color=TEST_PULSE_PREV_COLOR, width=2),
                       name="previous")
 
@@ -204,10 +215,11 @@ class SweepPlotter:
         ----------
         sweep_number : used to generate meaningful labels
         sweep : holds timestamps and response values for this sweep
+        y_label: label for the y-axis (mV or pA)
         advance : if True, store this sweep's response for use in later plots
 
-
         """
+
         # defining initial and previous test response
         initial = None
         previous = None
@@ -228,9 +240,6 @@ class SweepPlotter:
                     self.initial_voltage_data = plot_data
                 self.previous_voltage_data = plot_data
             else:
-                previous = None
-                initial = None
-                # TODO this breaks because of different sampling rates
                 previous = self.previous_current_data
                 initial = self.initial_current_data
                 if self.initial_current_data is None:
@@ -239,8 +248,7 @@ class SweepPlotter:
 
         thumbnail = make_test_pulse_plot(
             sweep_number=sweep_number, plot_data=plot_data,
-            clamp_mode=sweep.clamp_mode,
-            previous=previous, initial=initial,
+            previous=previous, initial=initial, y_label=y_label,
             step=self.config.thumbnail_step, labels=False
         )
 
@@ -267,6 +275,7 @@ class SweepPlotter:
         ----------
         sweep_number : used to generate meaningful labels
         sweep_data : holds timestamps and voltage values for this sweep
+        y_label: label for the y-axis (mV or pA)
 
         """
 
@@ -279,7 +288,7 @@ class SweepPlotter:
 
         thumbnail = make_experiment_plot(
             sweep_number=sweep_number, plot_data=plot_data,
-            exp_baseline=exp_baseline, clamp_mode=sweep_data.clamp_mode,
+            exp_baseline=exp_baseline, y_label=y_label,
             step=self.config.thumbnail_step, labels=False
         )
 
@@ -294,6 +303,19 @@ class SweepPlotter:
         )
 
     def advance(self, sweep_number: int):
+        """ Determines what the y-label for the plots should be based on the
+        clamp mode and then generates two fixed plots: one for the test pulse
+        epoch and another for the experiment epoch.
+
+        Parameters
+        ----------
+        sweep_number : sweep number for the sweep to be plotted
+
+        Returns
+        -------
+        Tuple[FixedPlots, FixedPlots] : two thumbnail and popup plot pairs
+             for the test pulse and experiment epoch of the sweep to be plotted
+        """
         sweep_data = self.data_set.sweep(sweep_number)
         if sweep_data.clamp_mode == "CurrentClamp":
             y_label = "membrane potential (mV)"
@@ -305,44 +327,8 @@ class SweepPlotter:
         )
 
 
-# def get_plot_data(sweep: Sweep, epoch: str) -> PlotData:
-#     if epoch == "test":
-#         start_index, end_index = sweep.epochs['test']
-#         response = sweep.response[start_index:end_index]
-#     elif epoch == "experiment":
-#         start_index = sweep.epochs['test'][0]
-#         # grabbing end of experiment or recording, whichever is smaller
-#         end_index = min(sweep.epochs['experiment'][1], sweep.epochs['recording'][1])
-#     else:
-#         start_index, end_index = sweep.epochs['sweep']
-#
-#     # grabbing np.ndarrays of data between start and end index
-#     stimulus = sweep.stimulus[start_index:end_index]
-#     response = sweep.response[start_index:end_index]
-#     time = sweep.t[start_index:end_index]
-#
-#     return PlotData(stimulus, response, time)
-#
-#
-# def subtract_baseline_response(response: np.ndarray):
-#     return response - np.mean(response)
-#
-#
-# def get_baseline_response(response: np.ndarray, start_index: int, end_index: int):
-#     return np.nanmean(response[start_index: end_index])
-#
-#
-# def get_test_pulse_data(sweep: Sweep):
-#     ...
-#
-#
-# def get_experiment_data(sweep: Sweep):
-#     ...
-
-
 def svg_from_mpl_axes(fig: mpl.figure.Figure) -> QByteArray:
-    """ Convert a matplotlib figure to SVG and store it in a Qt byte array.
-    """
+    """ Convert a matplotlib figure to SVG and store it in a Qt byte array."""
 
     data = io.BytesIO()
     fig.savefig(data, format="svg")
@@ -373,10 +359,8 @@ def test_response_plot_data(
 
     Returns
     -------
-    time :
-        timestamps of voltage samples (s)
-    response :
-        baseline-subtracted response (mV or pA)
+    PlotData : a named tuple with the sweep's stimulus, response, and time
+
     """
 
     start_index, end_index = (
@@ -394,10 +378,10 @@ def test_response_plot_data(
 def make_test_pulse_plot(
     sweep_number: int, 
     plot_data: PlotData,
-    clamp_mode: str,
     previous: Optional[PlotData] = None,
     initial: Optional[PlotData] = None,
-    step: int = 1, 
+    y_label: str = "",
+    step: int = 1,
     labels: bool = True
 ) -> mpl.figure.Figure:
     """ Make a (static) plot of the response to a single sweep's test pulse, 
@@ -406,11 +390,10 @@ def make_test_pulse_plot(
     Parameters
     ----------
     sweep_number : Identifier for this sweep. Used for labeling.
-    time : timestamps (s) of voltage samples for this sweep
-    response : response (mV or pA) trace for this sweep
-    clamp_mode : clamp mode for this sweep ('CurrentClamp' or 'VoltageClamp')
+    plot_data : named tuple with raw data for plotting
     previous : response (mV or pA) trace for the previous sweep
     initial : response (mV or pA) trace for the first sweep in this experiment
+    y_label: label for the y-axis (mV or pA)
     step : stepsize applied to each array. Can be used to generate decimated 
         thumbnails
     labels : If False, labels will not be generated (useful for thumbnails).
@@ -435,10 +418,8 @@ def make_test_pulse_plot(
             label=f"sweep {sweep_number}", color=TEST_PULSE_CURRENT_COLOR)
 
     ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    if clamp_mode == "CurrentClamp":
-        ax.set_ylabel("membrane potential (mV)", fontsize=PLOT_FONTSIZE)
-    else:
-        ax.set_ylabel("holding current (pA)", fontsize=PLOT_FONTSIZE)
+
+    ax.set_ylabel(y_label, fontsize=PLOT_FONTSIZE)
 
     if labels:
         ax.legend()
@@ -468,9 +449,7 @@ def experiment_plot_data(
 
     Returns
     -------
-    time : timestamps (s) of response samples for this sweep
-
-    response : in (mV or pA). The response trace for this sweep's experiment epoch.
+    PlotData : a named tuple with the sweep's stimulus, response, and time
 
     baseline_mean : the average response (mV) during the baseline epoch for this
         sweep
@@ -500,7 +479,7 @@ def make_experiment_plot(
     sweep_number: int,
     plot_data: PlotData,
     exp_baseline: float,
-    clamp_mode: str,
+    y_label: str,
     step: int = 1,
     labels: bool = True
 ) -> mpl.figure.Figure:
@@ -509,11 +488,10 @@ def make_experiment_plot(
     Parameters
     ----------
     sweep_number : Identifier for this sweep. Used for labeling.
-    exp_time : timestamps (s) of voltage samples for this sweep
-    exp_response : response (mV or pA) trace for this sweep
+    plot_data : named tuple with raw data for plotting
     exp_baseline : the average response (mV or pA) during a period just before
         stimulation
-    clamp_mode : the clamp mode for this sweep (CurrentClamp or VoltageClamp)
+    y_label: label for the y-axis (mV or pA)
     step : stepsize applied to each array. Can be used to generate decimated
         thumbnails
     labels : If False, labels will not be generated (useful for thumbnails).
@@ -537,10 +515,7 @@ def make_experiment_plot(
     ax.set_xlim(time_lim)
 
     ax.set_xlabel("time (s)", fontsize=PLOT_FONTSIZE)
-    if clamp_mode == "CurrentClamp":
-        ax.set_ylabel("membrane potential (mV)", fontsize=PLOT_FONTSIZE)
-    else:
-        ax.set_ylabel("holding current (pA)", fontsize=PLOT_FONTSIZE)
+    ax.set_ylabel(y_label, fontsize=PLOT_FONTSIZE)
 
     if labels:
         ax.legend()
