@@ -61,6 +61,7 @@ def test_experiment_plot_data(sweep):
     check.equal(obt_base, 3.25)
 
 
+# TODO this test fails in master branch
 @pytest.mark.parametrize("time,voltage,previous,initial,sweep_number", [
     [np.arange(20), np.arange(20), None, None, 40],
     [np.arange(20), np.arange(20), np.arange(20) * 2, np.arange(20) * 3, 40]
@@ -85,6 +86,7 @@ def test_pulse_popup_plotter(time, voltage, previous, initial, sweep_number):
             check_allclose(item.yData, initial)
 
 
+# TODO this test fails in master branch
 @pytest.mark.parametrize("time,voltage,baseline", [
     [np.linspace(0, np.pi, 20), np.arange(20), 1.0]
 ])
