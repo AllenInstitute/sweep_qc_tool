@@ -19,8 +19,8 @@ PLOT_FONTSIZE = 24
 DEFAULT_FIGSIZE = (8, 8)
 
 TEST_PULSE_CURRENT_COLOR = "#000000"
-TEST_PULSE_PREV_COLOR = "#0000ff50"
-TEST_PULSE_INIT_COLOR = "#ff000050"
+TEST_PULSE_PREV_COLOR = "#0000ff"
+TEST_PULSE_INIT_COLOR = "#ff0000"
 
 EXP_PULSE_CURRENT_COLOR = "#000000"
 EXP_PULSE_BASELINE_COLOR = "#0000ff"
@@ -207,7 +207,7 @@ class SweepPlotter:
         sweep_number: int, 
         sweep: Sweep,
         y_label: str = "",
-        store_test_pulse: bool = True
+        advance: bool = True
     ) -> FixedPlots:
         """ Generate test pulse response plots for a single sweep
 
@@ -216,7 +216,7 @@ class SweepPlotter:
         sweep_number : used to generate meaningful labels
         sweep : holds timestamps and response values for this sweep
         y_label: label for the y-axis (mV or pA)
-        store_test_pulse : if True, store this sweep's response for use in later plots
+        advance : if True, store this sweep's response for use in later plots
 
         """
 
@@ -232,7 +232,7 @@ class SweepPlotter:
             self.config.test_pulse_baseline_samples
         )
 
-        if store_test_pulse:
+        if advance:
             if sweep.clamp_mode == "CurrentClamp":
                 previous = self.previous_voltage_data
                 initial = self.initial_voltage_data
@@ -316,38 +316,19 @@ class SweepPlotter:
         Tuple[FixedPlots, FixedPlots] : two thumbnail and popup plot pairs
              for the test pulse and experiment epoch of the sweep to be plotted
         """
-        # TODO set advance = False for certain sweeps
         sweep_data = self.data_set.sweep(sweep_number)
-        stimulus_code = self.data_set.sweep_table['stimulus_code'][sweep_number]
-
-        # determine y-axis label based on clamp mode and which tp's to store
         if sweep_data.clamp_mode == "CurrentClamp":
-            # don't store test pulse for 'Search'
-            if stimulus_code[-6:] == "Search":
-                store_test_pulse = False
-            else:
-                store_test_pulse = True
             y_label = "membrane potential (mV)"
         else:
-            # only store test pulse for 'NucVC' sweeps
-            if stimulus_code[0:5] == "NucVC":
-                store_test_pulse = True
-            else:
-                store_test_pulse = False
             y_label = "holding current (pA)"
-
         return (
-            self.make_test_pulse_plots(
-                sweep_number=sweep_number,
-                sweep=sweep_data, y_label=y_label,
-                store_test_pulse=store_test_pulse
-            ),
+            self.make_test_pulse_plots(sweep_number, sweep_data, y_label),
             self.make_experiment_plots(sweep_number, sweep_data, y_label)
         )
 
 
 def svg_from_mpl_axes(fig: mpl.figure.Figure) -> QByteArray:
-    """ Convert a matplotlib figure to SVG and smtore it in a Qt byte array."""
+    """ Convert a matplotlib figure to SVG and store it in a Qt byte array."""
 
     data = io.BytesIO()
     fig.savefig(data, format="svg")

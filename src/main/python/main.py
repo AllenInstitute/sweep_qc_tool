@@ -10,8 +10,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QCheckBox,
-    QGroupBox
+    QCheckBox
 )
 from pyqtgraph import setConfigOption
 
@@ -52,31 +51,17 @@ class SweepPage(QWidget):
         self.sweep_view = SweepTableView(self.colnames)
         self.sweep_view.setModel(self.sweep_model)
 
-        # sweep filter checkboxes
-        self.auto_qc_checkbox = QCheckBox("Auto QC pipeline")
-        self.search_sweep_checkbox = QCheckBox("Search sweeps")
-        self.nuc_sweep_checkbox = QCheckBox("Channel sweeps")
+        # check box that filters sweeps down to those that go through auto-qc pipeline
+        self.auto_qc_filter_checkbox = QCheckBox("Auto QC filter")
+        self.search_filter_checkbox = QCheckBox("Search")
 
-        # disable checkboxes until data is loaded
-        self.auto_qc_checkbox.setEnabled(False)
-        self.search_sweep_checkbox.setEnabled(False)
-        self.nuc_sweep_checkbox.setEnabled(False)
-
-        # checkbox layout
-        search_groupbox = QGroupBox("Sweep filters")
-        hbox_layout = QHBoxLayout()
-        search_groupbox.setLayout(hbox_layout)
-        hbox_layout.addWidget(self.auto_qc_checkbox)
-        hbox_layout.addWidget(self.search_sweep_checkbox)
-        hbox_layout.addWidget(self.nuc_sweep_checkbox)
-
-        # page layout
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.sweep_view)
-        vbox_layout.addWidget(search_groupbox)
+        hbox_layout = QHBoxLayout()
+        vbox_layout.addLayout(hbox_layout)
 
-        # check boxes for filtering various sweeps
-
+        hbox_layout.addWidget(self.auto_qc_filter_checkbox)
+        hbox_layout.addWidget(self.search_filter_checkbox)
         self.setLayout(vbox_layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -92,12 +77,10 @@ class SweepPage(QWidget):
 
         """
         # connections between model and self
-        self.sweep_model.new_data.connect(self.set_default_check_states)
-
-        # self.sweep_model.new_data.connect(self.search_filter_checkbox.setChecked)
-        self.auto_qc_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
-        self.search_sweep_checkbox.stateChanged.connect(self.sweep_view.filter_search)
-        self.nuc_sweep_checkbox.stateChanged.connect(self.sweep_view.filter_nuc)
+        self.sweep_model.new_data.connect(self.auto_qc_filter_checkbox.setChecked)
+        self.sweep_model.new_data.connect(self.search_filter_checkbox.setChecked)
+        self.auto_qc_filter_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
+        self.search_filter_checkbox.stateChanged.connect(self.sweep_view.filter_search)
 
         # connect model to raw data
         self.sweep_model.connect(data)
@@ -105,17 +88,7 @@ class SweepPage(QWidget):
         # connections between model and view
         # self.sweep_model.clear_signal.connect(self.sweep_view.rowsAboutToBeRemoved)
         # self.sweep_model.row_count_changed.connect(self.sweep_view.rowCountChanged)
-        # self.sweep_model.new_data.connect(self.sweep_view.filter_auto_qc)
-
-    def set_default_check_states(self):
-        # enable checkboxes when data is loaded
-        self.auto_qc_checkbox.setEnabled(True)
-        self.search_sweep_checkbox.setEnabled(True)
-        self.nuc_sweep_checkbox.setEnabled(True)
-        # set default check states
-        self.auto_qc_checkbox.setChecked(True)
-        self.search_sweep_checkbox.setChecked(False)
-        self.nuc_sweep_checkbox.setChecked(False)
+        self.sweep_model.new_data.connect(self.sweep_view.filter_auto_qc)
 
 
 class PlotPage(QWidget):

@@ -17,7 +17,7 @@ class SweepTableModel(QAbstractTableModel):
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
     # clear_signal = pyqtSignal(QModelIndex, int, int, name="clear_table")
     # row_count_changed = pyqtSignal(int, int, name="row_count_changed")
-    new_data = pyqtSignal(name="new_data")
+    new_data = pyqtSignal(bool, name="new_data")
 
     FAIL_BGCOLOR = QColor(255, 225, 225)
 
@@ -65,7 +65,7 @@ class SweepTableModel(QAbstractTableModel):
         sweep_states : 
             A list of dictionaries. Each element contains ancillary information about
             automatic QC results for that sweep.
- previous       manual_qc_states :
+        manual_qc_states : 
             For each sweep, whether the user has manually passed or failed it (or left it untouched).
         dataset : 
             The underlying data. Used to extract sweepwise voltage traces
@@ -116,7 +116,7 @@ class SweepTableModel(QAbstractTableModel):
         self.endInsertRows()
         # TODO fix bug where rows aren't removed in SweepTableView when a new data set is loaded
         # self.row_count_changed.emit(initial_row_count, self.rowCount())
-        self.new_data.emit()
+        self.new_data.emit(True)
 
     def rowCount(self, *args, **kwargs):
         """ The number of sweeps
