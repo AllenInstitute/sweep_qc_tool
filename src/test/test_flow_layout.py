@@ -57,7 +57,6 @@ def test_minimum_size(layout):
     assert QSize(34, 32) == layout.minimumSize()
 
 
-# TODO this test fails in master branch
 def test_do_layout(layout):
     first = SquareWidget(20)
     second = SquareWidget(30)
