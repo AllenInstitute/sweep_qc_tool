@@ -130,7 +130,7 @@ class SweepTableView(QTableView):
         popup.move(left, top)
         popup.exec()
 
-    def filter_auto_qc(self, state: Qt.Checked or bool):
+    def filter_auto_qc(self, state: Qt.Checked):
         """ Filters the table down to sweeps that went through auto QC pipeline
         if the button is checked
 
@@ -139,18 +139,34 @@ class SweepTableView(QTableView):
             state : Qt.Checked or bool
                 the state of the checkbox; True = checked; Flase = unchecked)
         """
-        if self.model().rowCount() > 0:
-            if state == Qt.Checked or state is True:
-                for index, row in enumerate(self.model().sweep_features):
-                    if row['passed'] is None:
-                        self.hideRow(index)
-            else:
-                for index, row in enumerate(self.model().sweep_features):
-                    if row['passed'] is None:
-                        self.showRow(index)
+        if state == Qt.Checked:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['passed'] is None:
+                    self.hideRow(index)
+        else:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['passed'] is None:
+                    self.showRow(index)
 
-    def filter_search(self, state: Qt.Checked or bool):
-        ...
+    def filter_search(self, state: Qt.Checked):
+        if state == Qt.Checked:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['stimulus_name'] == "Search":
+                    self.showRow(index)
+        else:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['stimulus_name'] == "Search":
+                    self.hideRow(index)
+
+    def filter_nuc(self, state: Qt.Checked or bool):
+        if state == Qt.Checked:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['stimulus_code'][0:5] == "NucVC":
+                    self.showRow(index)
+        else:
+            for index, row in enumerate(self.model().sweep_features):
+                if row['stimulus_code'][0:5] == "NucVC":
+                    self.hideRow(index)
 
     # def clear_table(self, index: QModelIndex, start: int, end: int):
     #     """ Notifies the table view that the table is about to be cleared
