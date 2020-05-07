@@ -41,7 +41,8 @@ class SweepPage(QWidget):
 
     def __init__(self, sweep_plot_config: SweepPlotConfig):
         """ Holds and displays a table view (and associated model) containing 
-        information about individual sweeps. 
+        information about individual sweeps. Filteres out sweeps based on
+        certain stimulus codes when checkboxes are ticked/unticked
         """
 
         super().__init__()
@@ -54,12 +55,10 @@ class SweepPage(QWidget):
 
         # sweep filter checkboxes
         self.auto_qc_checkbox = QCheckBox("Auto QC pipeline")
-        self.search_sweep_checkbox = QCheckBox("Search sweeps")
         self.nuc_sweep_checkbox = QCheckBox("Channel sweeps")
 
         # disable checkboxes until data is loaded
         self.auto_qc_checkbox.setEnabled(False)
-        self.search_sweep_checkbox.setEnabled(False)
         self.nuc_sweep_checkbox.setEnabled(False)
 
         # checkbox layout
@@ -67,16 +66,12 @@ class SweepPage(QWidget):
         hbox_layout = QHBoxLayout()
         search_groupbox.setLayout(hbox_layout)
         hbox_layout.addWidget(self.auto_qc_checkbox)
-        hbox_layout.addWidget(self.search_sweep_checkbox)
         hbox_layout.addWidget(self.nuc_sweep_checkbox)
 
         # page layout
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.sweep_view)
         vbox_layout.addWidget(search_groupbox)
-
-        # check boxes for filtering various sweeps
-
         self.setLayout(vbox_layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -91,30 +86,22 @@ class SweepPage(QWidget):
             Will be used as the underlying data store (via this object's model).
 
         """
-        # connections between model and self
+        # connections between model and check buttons
         self.sweep_model.new_data.connect(self.set_default_check_states)
-
-        # self.sweep_model.new_data.connect(self.search_filter_checkbox.setChecked)
         self.auto_qc_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
-        self.search_sweep_checkbox.stateChanged.connect(self.sweep_view.filter_search)
         self.nuc_sweep_checkbox.stateChanged.connect(self.sweep_view.filter_nuc)
 
         # connect model to raw data
         self.sweep_model.connect(data)
 
-        # connections between model and view
-        # self.sweep_model.clear_signal.connect(self.sweep_view.rowsAboutToBeRemoved)
-        # self.sweep_model.row_count_changed.connect(self.sweep_view.rowCountChanged)
-        # self.sweep_model.new_data.connect(self.sweep_view.filter_auto_qc)
-
     def set_default_check_states(self):
+        """ Sets the default checkbox states when a new data set is loaded """
         # enable checkboxes when data is loaded
         self.auto_qc_checkbox.setEnabled(True)
-        self.search_sweep_checkbox.setEnabled(True)
         self.nuc_sweep_checkbox.setEnabled(True)
+
         # set default check states
         self.auto_qc_checkbox.setChecked(True)
-        self.search_sweep_checkbox.setChecked(False)
         self.nuc_sweep_checkbox.setChecked(False)
 
 
@@ -266,6 +253,7 @@ class Application(object):
         self.feature_page = CellFeaturePage()
         self.plot_page = PlotPage()
         self.status_bar = self.main_window.statusBar()
+
         # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
         
@@ -290,7 +278,6 @@ class Application(object):
             self.pre_fx_controller.selected_qc_criteria_path.emit(initial_qc_criteria_path)
         if initial_nwb_path is not None:
             self.pre_fx_controller.selected_data_set_path.emit(initial_nwb_path)
-
 
     def run(self):
         self.main_window.show()

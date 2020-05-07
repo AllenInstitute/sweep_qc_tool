@@ -13,6 +13,10 @@ class FxData(QObject):
     status_message = pyqtSignal(str, name="status_message")
 
     def __init__(self):
+        """ Runs intrinsic property feature extraction and keeps track of
+        whether or not this information is up to date based on whether the
+        data set has changed or the qc state has changed.
+        """
         super().__init__()
         self._state_out_of_date: bool = False
         self.input_nwb_file = None
@@ -22,10 +26,14 @@ class FxData(QObject):
         self.feature_data = None
 
     def out_of_date(self):
+        """ Emit state outdated signal when data changes and therefore features
+        are out of date.
+        """
         self.state_outdated.emit()
         self._state_out_of_date = True
 
     def new_state(self):
+        """ Emit new state signal after feature extraction is complete. """
         self.new_state_set.emit(self.feature_data)
         self._state_out_of_date = False
 
@@ -35,7 +43,9 @@ class FxData(QObject):
                           sweep_info,
                           cell_info,
                           ):
-
+        """ Updates information to used for intrinsic property feature
+        extraction when data or qc states change.
+        """
         self.out_of_date()
         self.input_nwb_file = nwb_path
         self.ontology = ontology
@@ -43,12 +53,14 @@ class FxData(QObject):
         self.cell_info = cell_info
 
     def connect(self, pre_fx_data):
+        """ Connect signal indicating data has changed to self."""
         pre_fx_data.data_changed.connect(self.set_fx_parameters)
 
     def run_feature_extraction(self):
-        # TODO fix big where current clamp sweeps that fail auto QC,
-        #  but pass manual QC break feature extraction (mainly Search and core1 auto-fails)
-        #  (Ramps, core 2 and Vclamps throw errors, but don't break things)
+        """ Runs intrinsic property feature extraction on sweeps that have
+        passed both auto QC and manual QC
+        """
+
         self.status_message.emit("Computing features, please wait.")
         drop_failed_sweeps(self.sweep_info)
         data_set = create_data_set(sweep_info=self.sweep_info,

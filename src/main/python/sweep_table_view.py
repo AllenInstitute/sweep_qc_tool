@@ -55,7 +55,6 @@ class SweepTableView(QTableView):
         super(SweepTableView, self).setModel(model)
         model.rowsInserted.connect(self.persist_qc_editor)
         model.rowsInserted.connect(self.resize_to_content)
-        # TODO connect model.rowsRemoved?
 
     def resize_to_content(self, *args, **kwargs):
         """ This function just exists so that we can connect signals with 
@@ -102,13 +101,7 @@ class SweepTableView(QTableView):
         if not index.column() in {test_column, exp_column}:
             return
 
-        index_rect = self.visualRect(index)
         self.popup_plot(self.model().data(index).full(), left=100, top=100)
-        # this breaks test_plot_popup_click though
-        # # commented this out so that the popup plot starts in a nicer place
-        #     index_rect.left(),
-        #     index_rect.top()
-        # )
 
     def popup_plot(self, graph: QWidget, left: int = 0, top: int = 0):
         """ Make a popup with a single widget, which ought to be a plotter for 
@@ -145,18 +138,11 @@ class SweepTableView(QTableView):
                     self.hideRow(index)
         else:
             for index, row in enumerate(self.model().sweep_features):
-                if row['passed'] is None:
-                    self.showRow(index)
-
-    def filter_search(self, state: Qt.Checked):
-        if state == Qt.Checked:
-            for index, row in enumerate(self.model().sweep_features):
-                if row['stimulus_name'] == "Search":
-                    self.showRow(index)
-        else:
-            for index, row in enumerate(self.model().sweep_features):
-                if row['stimulus_name'] == "Search":
+                if row['stimulus_code'][-6:] == "Search":
                     self.hideRow(index)
+                    return
+                elif row['passed'] is None:
+                    self.showRow(index)
 
     def filter_nuc(self, state: Qt.Checked or bool):
         if state == Qt.Checked:
@@ -167,17 +153,3 @@ class SweepTableView(QTableView):
             for index, row in enumerate(self.model().sweep_features):
                 if row['stimulus_code'][0:5] == "NucVC":
                     self.hideRow(index)
-
-    # def clear_table(self, index: QModelIndex, start: int, end: int):
-    #     """ Notifies the table view that the table is about to be cleared
-    #
-    #     Parameters
-    #     ----------
-    #         index : QModelIndex
-    #             the index for the clearing operation
-    #         start: int
-    #             row index of first row to be removed
-    #         end : int
-    #             row index of the last row to be removed
-    #     """
-    #     self.rowsAboutToBeRemoved(index, start, end)
