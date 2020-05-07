@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
         fx_data.state_outdated.connect(fx_status.show)
         fx_data.new_state_set.connect(fx_status.hide)
 
+
 class Application(object):
 
     def __init__(

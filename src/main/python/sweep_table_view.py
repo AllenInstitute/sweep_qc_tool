@@ -104,7 +104,8 @@ class SweepTableView(QTableView):
 
         index_rect = self.visualRect(index)
         self.popup_plot(self.model().data(index).full(), left=100, top=100)
-        # commented this out so that the popup plot starts in a nicer place
+        # this breaks test_plot_popup_click though
+        # # commented this out so that the popup plot starts in a nicer place
         #     index_rect.left(),
         #     index_rect.top()
         # )

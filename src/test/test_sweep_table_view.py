@@ -60,12 +60,13 @@ def test_plot_popup_click(qtbot, row, col):
 
     colpos = sum([view.columnWidth(pos) for pos in range(col)])
     rowpos = sum([view.rowHeight(pos) for pos in range(row)])
+
     point = QPoint(colpos + 1, rowpos + 1)
 
     qtbot.mouseClick(view.viewport(), Qt.LeftButton, Qt.NoModifier, point)
 
     if col in [6, 7]:
         expected = ("test" if col == 6 else "exp") + f"_{row}"
-        check_mock_called_with(view.popup_plot, expected, colpos, rowpos)
+        check_mock_called_with(view.popup_plot, expected, left=100, top=100)
     else:
         check_mock_not_called(view.popup_plot)
