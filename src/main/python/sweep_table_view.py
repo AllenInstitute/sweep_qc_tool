@@ -125,12 +125,13 @@ class SweepTableView(QTableView):
 
     def filter_auto_qc(self, state: Qt.Checked):
         """ Filters the table down to sweeps that went through auto QC pipeline
-        if the button is checked
+        if the checkbox is checked
 
         Parameters
         ----------
             state : Qt.Checked or bool
-                the state of the checkbox; True = checked; Flase = unchecked)
+                the state of the checkbox; True = checked; False = unchecked)
+
         """
         if state == Qt.Checked:
             for index, row in enumerate(self.model().sweep_features):
@@ -145,6 +146,16 @@ class SweepTableView(QTableView):
                     self.showRow(index)
 
     def filter_nuc(self, state: Qt.Checked or bool):
+        """ Filters the table down to channel recording sweeps if the checkbox
+        is checked. Channel recording sweeps have the NucVC prefix for their
+        stimulus code.
+
+        Parameters
+        ----------
+            state : Qt.Checked or bool
+                the state of the checkbox; True = checked; False = unchecked)
+
+        """
         if state == Qt.Checked:
             for index, row in enumerate(self.model().sweep_features):
                 if row['stimulus_code'][0:5] == "NucVC":

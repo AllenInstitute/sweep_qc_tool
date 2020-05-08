@@ -13,10 +13,19 @@ from sweep_plotter import SweepPlotter, SweepPlotConfig
 
 
 class SweepTableModel(QAbstractTableModel):
+    """ Abstract table model holding the raw data for the sweep page.
 
+    Attributes
+    ----------
+    qc_state_updated : pyqtSignal
+        Signal that is emitted with the user updates the manual qc state.
+    new_data : pyqtSignal
+        Signal that is emitted when the user loads a new data set.
+    FAIL_BGCOLOR : QColor
+        Color that is used to pain the auto qc column when a sweep auto-fails
+
+    """
     qc_state_updated = pyqtSignal(int, str, name="qc_state_updated")
-    # clear_signal = pyqtSignal(QModelIndex, int, int, name="clear_table")
-    # row_count_changed = pyqtSignal(int, int, name="row_count_changed")
     new_data = pyqtSignal(name="new_data")
 
     FAIL_BGCOLOR = QColor(255, 225, 225)
@@ -26,7 +35,18 @@ class SweepTableModel(QAbstractTableModel):
         colnames: Sequence[str],
         plot_config: SweepPlotConfig
     ):
+        """ Initializes and configures abstract table model
+
+        Parameters
+        ----------
+        colnames : Sequence[str]
+            list of column names for the sweep table model
+        plot_config : SweepPlotConfig
+            named tuple with constants used for plotting sweeps
+
+        """
         super().__init__()
+
         self.colnames = colnames
         self.column_map = {colname: idx for idx, colname in enumerate(colnames)}
         self._data: List[List[Any]] = []
@@ -42,7 +62,7 @@ class SweepTableModel(QAbstractTableModel):
         data : 
             Will be used as the underlying data store. Will emit notifications when 
             data has been updated. Will recieve notifications when users update 
-            QC states for individual sweeps.
+            QC states for individual sw eeps.
 
         """
 
@@ -56,52 +76,51 @@ class SweepTableModel(QAbstractTableModel):
         manual_qc_states: Dict[int, str], 
         dataset: EphysDataSet
     ):
-        """ Called when the underlying data has been completely replaced
+        """ Called when the underlying data has been completely replaced.
+        Clears any old data and populates the table model with new data.
+        Emits new_data signal after the table is done being populated
 
         Parameters
         ----------
-        sweep_features : 
+        sweep_features : List[dict]
             A list of dictionaries. Each element describes a sweep.
-        sweep_states : 
+        sweep_states : List
             A list of dictionaries. Each element contains ancillary information about
             automatic QC results for that sweep.
- previous       manual_qc_states :
-            For each sweep, whether the user has manually passed or failed it (or left it untouched).
-        dataset : 
+        manual_qc_states : Dict[int, str]
+            For each sweep, whether the user has manually passed or failed it (or left it untouched)
+        dataset : EphysDataSet
             The underlying data. Used to extract sweepwise voltage traces
 
         """
         # grabbing sweep features so that sweep table view can filter based on these values
         self.sweep_features = sweep_features
 
-        # TODO call SweepTableView.rowsAboutToBeRemoved() or .rowCountChanged() here?
-        # self.clear_signal.emit(QModelIndex, 1, self.rowCount())
-        # initial_row_count = self.rowCount()
-        # self.row
+        # clears any data that the table is currently holding
         if self.rowCount() > 0:
-            # self.rowsAboutToBeRemoved(QModelIndex, 1, self.rowCount())
-            # initial_row_count = self.rowCount()
             self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
-            # self.clear_signal.emit(QModelIndex, 1, self.rowCount())
             self._data = []
             self.endRemoveRows()
-            # self.rowsRemoved(QModelIndex, 1, initial_row_count)
 
-        # state_lookup = {state["sweep_number"]: state for state in sweep_states}
         plotter = SweepPlotter(dataset, self.plot_config)
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
-        for index, sweep in enumerate(sweep_features):
 
+        # populates the sweep table model
+        for index, sweep in enumerate(sweep_features):
+            # populates auto qc state column based on sweep states list
             if sweep_states[index]['passed']:
                 auto_qc_state = "passed"
+            # sweep state should be None if it did not go through auto qc
             elif sweep_states[index]['passed'] is None:
                 auto_qc_state = "n/a"
             else:
                 auto_qc_state = "failed"
 
+            # generate thumbnail / popup plot pairs for each sweep
             test_pulse_plots, experiment_plots = plotter.advance(index)
 
+            # add the new row to the sweep table model
             self._data.append([
                 index,
                 sweep["stimulus_code"],
@@ -114,17 +133,32 @@ class SweepTableModel(QAbstractTableModel):
             ])
 
         self.endInsertRows()
-        # TODO fix bug where rows aren't removed in SweepTableView when a new data set is loaded
-        # self.row_count_changed.emit(initial_row_count, self.rowCount())
+
+        # emit signal indicating that the model now has new data in it
         self.new_data.emit()
 
     def rowCount(self, *args, **kwargs):
-        """ The number of sweeps
+        """ The number of rows in the sweep table model, which should be the
+        same as the number of sweeps currently loaded in the table model
+
+        Returns
+        -------
+        num_rows : int
+            number of rows in the sweep table model
+
         """
         return len(self._data)
 
     def columnCount(self, *args, **kwargs) -> int:
-        """ The number of sweep characteristics
+        """ The number of columns in the sweep table model. The last two
+        columns contain thumbnails for popup plots and the rest contain
+        sweep characteristics and qc states.
+
+        Returns
+        -------
+        num_cols : int
+            number of columns in the sweep table model
+
         """
         return len(self.colnames)
 
@@ -137,9 +171,9 @@ class SweepTableModel(QAbstractTableModel):
 
         Parameters
         ----------
-        index :
+        index : QModelIndex
             Which table cell to read.
-        role : 
+        role : int
             How the data is being accessed. Currently DisplayRole and EditRole are 
             supported.
 
@@ -165,10 +199,25 @@ class SweepTableModel(QAbstractTableModel):
     def headerData(
         self,
         section: int,
-        orientation: int = QtCore.Qt.Horizontal,
-        role: int = QtCore.Qt.DisplayRole
+        orientation: QtCore.Qt.Orientation = QtCore.Qt.Horizontal,
+        role: QtCore.Qt.ItemDataRole = QtCore.Qt.DisplayRole
     ):
-        """ Returns the name of the 'section'th column 
+        """ Returns the name of the 'section'th column
+
+        Parameters
+        ----------
+        section : int
+            integer index of the column to return the name for
+        orientation : QtCore.Qt.Orientation
+            the orientation for the data being accessed
+        role : QtCore.Qt.ItemDataRole
+            the display role for the data being accessed
+
+        Returns
+        -------
+        colname : str
+            the name of the column that is being accessed
+
         """
 
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
@@ -179,6 +228,17 @@ class SweepTableModel(QAbstractTableModel):
             index: QModelIndex
     ) -> QtCore.Qt.ItemFlag:
         """ Returns integer flags for the item at a supplied index.
+
+        Parameters
+        ----------
+        index : QModelIndex
+            index used to locate data in the model
+
+        Returns
+        -------
+        flags: QtCore.Qt.ItemFlag
+            describes the properties of the item being accessed
+
         """
 
         flags = super(SweepTableModel, self).flags(index)
@@ -192,9 +252,26 @@ class SweepTableModel(QAbstractTableModel):
             self,
             index: QModelIndex,
             value: str,  # TODO: typing
-            role: int = QtCore.Qt.EditRole
+            role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole
     ) -> bool:
         """ Updates the data at the supplied index.
+
+        Parameters
+        ----------
+        index : QModelIndex
+            index used to locate data in the model
+        value : str
+            if this value is an entry in the manual QC state column and it is
+            different than the current one this updates it to the new value
+        role : QtCore.Qt.ItemDataRole
+            the display role for the data being accessed
+
+        Returns
+        -------
+        state : bool
+            returns True if data was successfully updated
+            returns False if data was not updated
+
         """
 
         current = self._data[index.row()][index.column()]
@@ -205,7 +282,6 @@ class SweepTableModel(QAbstractTableModel):
                 and role == QtCore.Qt.EditRole \
                 and value != current:
             self._data[index.row()][index.column()] = value
-            # qc_state_updated may be doing the same thing as .dataChanged()
             self.qc_state_updated.emit(
                 self._data[index.row()][self.column_map["sweep number"]], value
             )
@@ -213,11 +289,22 @@ class SweepTableModel(QAbstractTableModel):
 
         return False
 
-    # def clear_table(self):
-
-
 
 def format_fail_tags(tags: List[str]) -> str:
+    """ Joins lists of strings containing information about the qc state
+    for each sweep and joins them together in a nice readable format.
+
+    Parameters
+    ----------
+    tags: List[str]
+        a list of strings containing tags related to qc states
+
+    Returns
+    -------
+    formatted_tags : str
+        a single string containing the tags passed into this function
+
+    """
     return "\n\n".join(tags)
 
 
