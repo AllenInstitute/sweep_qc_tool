@@ -1,8 +1,8 @@
 from typing import Optional
 
 
-from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget
-from PyQt5.QtCore import QModelIndex, Qt
+from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget, QAction
+from PyQt5.QtCore import QModelIndex
 
 from delegates import SvgDelegate, ComboBoxDelegate
 from sweep_table_model import SweepTableModel
@@ -42,6 +42,24 @@ class SweepTableView(QTableView):
 
         self.setWordWrap(True)
 
+        # sweep view filter actions
+        self.filter_auto_qc_sweeps_action = QAction("Auto QC sweeps")
+        self.filter_channel_sweeps_action = QAction("Channel recording sweeps")
+        self.init_actions()
+
+    def init_actions(self):
+        """ Initializes menu actions which are responsible for filtering sweeps
+        """
+        # initialize filter down to auto qc action
+        self.filter_auto_qc_sweeps_action.setCheckable(True)
+        self.filter_auto_qc_sweeps_action.toggled.connect(self.filter_sweeps)
+        self.filter_auto_qc_sweeps_action.setEnabled(False)
+
+        # initialize filter down to channel sweeps action
+        self.filter_channel_sweeps_action.setCheckable(True)
+        self.filter_channel_sweeps_action.toggled.connect(self.filter_sweeps)
+        self.filter_channel_sweeps_action.setEnabled(False)
+
     def get_column_index(self, name: str) -> Optional[int]:
         return self._colname_idx_map.get(name, None)
     
@@ -76,7 +94,7 @@ class SweepTableView(QTableView):
 
         Parameters
         ----------
-        all are ignored. They are present because this method is triggered by a data-carrying signal.
+        all are ignored. They are present because this method is triggered by a data-carrying signal
 
         """
 
@@ -123,44 +141,44 @@ class SweepTableView(QTableView):
         popup.move(left, top)
         popup.exec()
 
-    def filter_auto_qc(self, state: Qt.Checked):
-        """ Filters the table down to sweeps that went through auto QC pipeline
-        if the checkbox is checked
-
-        Parameters
-        ----------
-            state : Qt.Checked or bool
-                the state of the checkbox; True = checked; False = unchecked)
+    def filter_sweeps(self):
+        """ Filters the table down to sweeps based on the checkboxes that are
+        check in the view menu. If 'Auto QC sweeps' is checked then it will
+        only show sweeps that have gone through the auto QC pipeline. If
+        'Channel recording sweeps' is checked then it will only show channel
+        recording sweeps with the 'NucVC' prefix. If both are checked then
+        it will only show auto QC pipeline sweeps and channel recording sweeps.
+        If neither are checked it will show everything except 'Search' sweeps.
 
         """
-        if state == Qt.Checked:
+        # if both are checked, then show auto QC and channel sweeps
+        if self.filter_auto_qc_sweeps_action.isChecked() \
+                and self.filter_channel_sweeps_action.isChecked():
             for index, row in enumerate(self.model().sweep_features):
-                if row['passed'] is None:
-                    self.hideRow(index)
-        else:
-            for index, row in enumerate(self.model().sweep_features):
-                if row['stimulus_code'][-6:] == "Search":
-                    self.hideRow(index)
-                    return
-                elif row['passed'] is None:
+                if row['passed'] is not None \
+                        or row['stimulus_code'][0:5] == "NucVC":
                     self.showRow(index)
+                else:
+                    self.hideRow(index)
 
-    def filter_nuc(self, state: Qt.Checked):
-        """ Filters the table down to channel recording sweeps if the checkbox
-        is checked. Channel recording sweeps have the NucVC prefix for their
-        stimulus code.
+        # if only auto QC is checked, then only show auto QC
+        elif self.filter_auto_qc_sweeps_action.isChecked():
+            for index, row in enumerate(self.model().sweep_features):
+                if row['passed'] is not None:
+                    self.showRow(index)
+                else:
+                    self.hideRow(index)
 
-        Parameters
-        ----------
-            state : Qt.Checked or bool
-                the state of the checkbox; True = checked; False = unchecked)
-
-        """
-        if state == Qt.Checked:
+        # if only channel sweeps are checked, then only show channel sweeps
+        elif self.filter_channel_sweeps_action.isChecked():
             for index, row in enumerate(self.model().sweep_features):
                 if row['stimulus_code'][0:5] == "NucVC":
                     self.showRow(index)
+                else:
+                    self.hideRow(index)
+
+        # if neither are checked then show everything except for 'Search'
         else:
             for index, row in enumerate(self.model().sweep_features):
-                if row['stimulus_code'][0:5] == "NucVC":
-                    self.hideRow(index)
+                if row['stimulus_code'][-6:] != "Search":
+                    self.showRow(index)

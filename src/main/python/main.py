@@ -8,10 +8,7 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHeaderView,
     QVBoxLayout,
-    QHBoxLayout,
     QLabel,
-    QCheckBox,
-    QGroupBox
 )
 from pyqtgraph import setConfigOption
 
@@ -53,25 +50,9 @@ class SweepPage(QWidget):
         self.sweep_view = SweepTableView(self.colnames)
         self.sweep_view.setModel(self.sweep_model)
 
-        # sweep filter checkboxes
-        self.auto_qc_checkbox = QCheckBox("Auto QC pipeline")
-        self.nuc_sweep_checkbox = QCheckBox("Channel sweeps")
-
-        # disable checkboxes until data is loaded
-        self.auto_qc_checkbox.setEnabled(False)
-        self.nuc_sweep_checkbox.setEnabled(False)
-
-        # checkbox layout
-        search_groupbox = QGroupBox("Sweep filters")
-        hbox_layout = QHBoxLayout()
-        search_groupbox.setLayout(hbox_layout)
-        hbox_layout.addWidget(self.auto_qc_checkbox)
-        hbox_layout.addWidget(self.nuc_sweep_checkbox)
-
         # page layout
         vbox_layout = QVBoxLayout()
         vbox_layout.addWidget(self.sweep_view)
-        vbox_layout.addWidget(search_groupbox)
         self.setLayout(vbox_layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -86,23 +67,21 @@ class SweepPage(QWidget):
             Will be used as the underlying data store (via this object's model).
 
         """
-        # connections between model and check buttons
-        self.sweep_model.new_data.connect(self.set_default_check_states)
-        self.auto_qc_checkbox.stateChanged.connect(self.sweep_view.filter_auto_qc)
-        self.nuc_sweep_checkbox.stateChanged.connect(self.sweep_view.filter_nuc)
+        # connect model to default checkbox states for view menu
+        self.sweep_model.new_data.connect(self.set_default_filter_states)
 
         # connect model to raw data
         self.sweep_model.connect(data)
 
-    def set_default_check_states(self):
+    def set_default_filter_states(self):
         """ Sets the default checkbox states when a new data set is loaded """
         # enable checkboxes when data is loaded
-        self.auto_qc_checkbox.setEnabled(True)
-        self.nuc_sweep_checkbox.setEnabled(True)
+        self.sweep_view.filter_auto_qc_sweeps_action.setEnabled(True)
+        self.sweep_view.filter_channel_sweeps_action.setEnabled(True)
 
         # set default check states
-        self.auto_qc_checkbox.setChecked(True)
-        self.nuc_sweep_checkbox.setChecked(False)
+        self.sweep_view.filter_auto_qc_sweeps_action.setChecked(True)
+        self.sweep_view.filter_channel_sweeps_action.setChecked(False)
 
 
 class PlotPage(QWidget):
@@ -135,6 +114,14 @@ class MainWindow(QMainWindow):
         tab_widget = QTabWidget()
         self.setCentralWidget(tab_widget)
 
+        # initialize main menu bar
+        self.main_menu_bar = self.menuBar()
+        self.file_menu = self.main_menu_bar.addMenu("File")
+        self.edit_menu = self.main_menu_bar.addMenu("Edit")
+        self.settings_menu = self.main_menu_bar.addMenu("Settings")
+        self.view_menu = self.main_menu_bar.addMenu("View")
+        self.main_menu_bar.addMenu("Help")
+
     def insert_tabs(
         self, 
         sweep_page: SweepPage, 
@@ -158,22 +145,21 @@ class MainWindow(QMainWindow):
         self.centralWidget().insertTab(1, feature_page, "Features")
         self.centralWidget().insertTab(2, plot_page, "Plots")
 
-    def create_main_menu_bar(self, pre_fx_controller: PreFxController):
+    def add_menu_actions(
+            self, pre_fx_controller: PreFxController, sweep_page: SweepPage
+    ):
         """ Set up the main application menu.
 
         Parameters
         ----------
-        pre_fx_controller : 
+        pre_fx_controller : PreFxController
             Owns QActions for loading nwb data, stimulus ontologies, and qc criteria
+        sweep_page : SweepPage
+            Owns QActions for filtering the sweeps viewed on the sweep page
 
         """
 
-        self.main_menu_bar = self.menuBar()
-        self.file_menu = self.main_menu_bar.addMenu("File")
-        self.edit_menu = self.main_menu_bar.addMenu("Edit")
-        self.settings_menu = self.main_menu_bar.addMenu("Settings")
-        self.main_menu_bar.addMenu("Help")
-
+        # add file menu actions
         self.file_menu.addAction(
             pre_fx_controller.load_data_set_action
         )
@@ -190,10 +176,16 @@ class MainWindow(QMainWindow):
             pre_fx_controller.load_qc_criteria_action
         )
 
+        # add settings menu actions
         self.settings_menu.addAction(pre_fx_controller.show_stimulus_ontology_action)
         self.settings_menu.addAction(pre_fx_controller.show_qc_criteria_action)
 
+        # add edit menu actions
         self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
+
+        # add view menu actions
+        self.view_menu.addAction(sweep_page.sweep_view.filter_auto_qc_sweeps_action)
+        self.view_menu.addAction(sweep_page.sweep_view.filter_channel_sweeps_action)
 
     def setup_status_bar(self, pre_fx_data: PreFxData, fx_data: FxData):
         """ Sets up a status bar, which reports the current state of the app. 
@@ -256,17 +248,22 @@ class Application(object):
 
         # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
-        
+
         # connect components
+        # connect controller toraw data and feature extractor
         self.pre_fx_controller.connect(self.pre_fx_data, self.fx_data)
+        # connect sweep page to raw data
         self.sweep_page.connect(self.pre_fx_data)
+        # connect main window to various components
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
-        self.main_window.create_main_menu_bar(self.pre_fx_controller)
+        self.main_window.add_menu_actions(self.pre_fx_controller, self.sweep_page)
+        # connect feature extractor to raw data
         self.fx_data.connect(self.pre_fx_data)
+        # connect feature page to feature extractor
         self.feature_page.connect(self.fx_data)
 
+        # initialize status bar
         self.main_window.setup_status_bar(self.pre_fx_data, self.fx_data)
-
         # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
         self.pre_fx_data.set_default_qc_criteria()
