@@ -68,7 +68,8 @@ class FxData(QObject):
                                    ontology=self.ontology,
                                    api_sweeps=False)
         try:
-            cell_features, sweep_features, cell_record, sweep_records = extract_data_set_features(data_set)
+            cell_features, sweep_features, cell_record, sweep_records = \
+                extract_data_set_features(data_set)
 
             cell_state = {"failed_fx": False, "fail_fx_message": None}
 

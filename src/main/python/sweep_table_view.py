@@ -145,7 +145,7 @@ class SweepTableView(QTableView):
                 elif row['passed'] is None:
                     self.showRow(index)
 
-    def filter_nuc(self, state: Qt.Checked or bool):
+    def filter_nuc(self, state: Qt.Checked):
         """ Filters the table down to channel recording sweeps if the checkbox
         is checked. Channel recording sweeps have the NucVC prefix for their
         stimulus code.
