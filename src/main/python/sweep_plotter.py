@@ -424,6 +424,9 @@ def svg_from_mpl_axes(fig: mpl.figure.Figure) -> QByteArray:
     ----------
     fig: mpl.figure.Figure
         a matplotlib figure containing the plot to be turned into a thumbnail
+
+    Returns
+    -------
     thumbnail : QByteArray
         a QByteArray used as a thumbnail for the given plot
 
