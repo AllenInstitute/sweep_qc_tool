@@ -13,7 +13,7 @@ from .conftest import check_allclose
 
 
 class MockSweep:
-    """ A mock current clamp sweep. """
+    """ A mock sweep """
     def __init__(self, clamp_mode="CurrentClamp"):
         self._clamp_mode = clamp_mode
 
@@ -58,6 +58,7 @@ class MockSweep:
 
 
 class MockDataSet:
+    """ A mock data set """
     @property
     def sweep_table(self):
         return [
@@ -75,6 +76,7 @@ class MockDataSet:
 @pytest.fixture
 def sweep():
     return MockSweep(clamp_mode="CurrentClamp")
+
 
 @pytest.mark.parametrize("start,end,baseline,expected", [
     [2.0, 5.0, 3, PlotData(
@@ -155,3 +157,8 @@ def test_experiment_popup_plotter_graph(plot_data, baseline, sweep_number, y_lab
 
     check.is_not_none(line)
     check.equal(line.y(), baseline)
+
+
+@pytest.mark.parametrize("sweep_number", [0, 1, 2])
+def test_advance(sweep_number):
+    ...
