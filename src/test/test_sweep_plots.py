@@ -14,6 +14,9 @@ from .conftest import check_allclose
 
 class MockSweep:
     """ A mock current clamp sweep. """
+    def __init__(self, clamp_mode="CurrentClamp"):
+        self._clamp_mode = clamp_mode
+
     @property
     def t(self):
         return np.arange(0, 10, 0.5)
@@ -33,22 +36,46 @@ class MockSweep:
 
     @property
     def stimulus(self):
-        return self.i
+        if self.clamp_mode == "CurrentClamp":
+            return self.i
+        else:
+            return self.v
 
     @property
     def response(self):
-        return self.v
+        if self.clamp_mode == "CurrentClamp":
+            return self.v
+        else:
+            return self.i
 
     @property
     def sampling_rate(self):
         return 0.0
 
+    @property
+    def clamp_mode(self):
+        return self._clamp_mode
+
+
+class MockDataSet:
+    @property
+    def sweep_table(self):
+        return [
+            {'sweep_number': 0, 'stimulus_code': "foobar"},
+            {'sweep_number': 1, 'stimulus_code': "fooSearch"},
+            {'sweep_number': 2, 'stimulus_code': "NucVCbar"}
+        ]
+
+    def sweep(self, sweep_number):
+        if sweep_number in (0, 1):
+            return MockSweep(clamp_mode="CurrentClamp")
+        elif sweep_number in 3:
+            return MockSweep(clamp_mode="VoltageClamp")
 
 @pytest.fixture
 def sweep():
-    return MockSweep()
+    return MockSweep(clamp_mode="CurrentClamp")
 
-    
 @pytest.mark.parametrize("start,end,baseline,expected", [
     [2.0, 5.0, 3, PlotData(
         stimulus=[0.0, 0.0, 1.0, 1.0, 1.0, 0.0],
