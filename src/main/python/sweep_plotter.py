@@ -304,17 +304,20 @@ class SweepPlotter:
         # called for sweeps that will save initial / previous test pulses
         if store_test_pulse:
             if sweep.clamp_mode == "CurrentClamp":
-                previous = self.previous_vclamp_data
-                initial = self.initial_vclamp_data
-                if self.initial_vclamp_data is None:
-                    self.initial_vclamp_data = plot_data
-                self.previous_vclamp_data = plot_data
-            else:
                 previous = self.previous_iclamp_data
                 initial = self.initial_iclamp_data
                 if self.initial_iclamp_data is None:
                     self.initial_iclamp_data = plot_data
-                self.previous_iclamp_data = plot_data
+                else:
+                    self.previous_iclamp_data = plot_data
+
+            else:
+                previous = self.previous_vclamp_data
+                initial = self.initial_vclamp_data
+                if self.initial_vclamp_data is None:
+                    self.initial_vclamp_data = plot_data
+                else:
+                    self.previous_vclamp_data = plot_data
 
         thumbnail = make_test_pulse_plot(
             sweep_number=sweep_number, plot_data=plot_data,
