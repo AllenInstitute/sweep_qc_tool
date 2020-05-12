@@ -59,9 +59,9 @@ set the menu action as checkable with `.setCheckable(True)`,
 connect the action with `.toggled.connect(self.filter_sweeps)`, 
 and set the action as disabled initially with `.setEnabled(False)`
 
-5. In the `.filter_sweeps()` method of `SweepTableView`, add appropriate checkbox logic
+3. In the `.filter_sweeps()` method of `SweepTableView`, add appropriate checkbox logic
 
-6. In `main.py`, set the initial status of the checkbox in `SweepPage.set_default_filter_states()`
+4. In `main.py`, set the initial status of the checkbox in `SweepPage.set_default_filter_states()`
 with `.setEnabled(True)` and `.setChecked(True)` or `.setChecked(False)`
 
-7. Also in `main.py`, add the action to the menu in `MainWindow.add_menu_actions()`
+5. Also in `main.py`, add the action to the menu in `MainWindow.add_menu_actions()`
