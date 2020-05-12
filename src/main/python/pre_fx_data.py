@@ -294,6 +294,7 @@ class PreFxData(QObject):
         commit : bool
             indicates whether or not to build new sweep table model
         """
+        self.status_message.emit("Creating data set...")
         # Creates the data set using input parameters
         data_set = create_data_set(
             sweep_info=None,
@@ -306,6 +307,7 @@ class PreFxData(QObject):
 
         data_set.sweep_table.sort_values(by='sweep_number', axis=0, inplace=True)
 
+        self.status_message.emit("Performing auto QC...")
         # cell_features: overall QC features for the cell
         # cell_tags: QC details about the cell (e.g. 'Blowout is not available'
         # sweep_features: list of dictionaries containing sweep features for
@@ -318,6 +320,7 @@ class PreFxData(QObject):
         )
 
         if commit:
+            self.status_message.emit("Gathering QC information...")
             self.begin_commit_calculated.emit()
 
             self.stimulus_ontology = stimulus_ontology
@@ -342,6 +345,7 @@ class PreFxData(QObject):
                 sweep['sweep_number']: "default" for sweep in self.sweep_states
             }
 
+            self.status_message.emit("Initializing sweep page...")
             # emits signal that tells sweep_table_model to populate itself
             # with new data
             self.end_commit_calculated.emit(

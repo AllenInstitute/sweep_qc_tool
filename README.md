@@ -49,3 +49,19 @@ When you run feature extraction, cell-level features are calculated using the se
 level of support
 ----------------
 We are actively using and maintaing this code. We welcome issues (particularly bug reports) and pull requests from the community, but cannot promise to address them on any fixed schedule.
+
+How to make your own sweep filters
+----------------------------------
+1. In `sweep_table_view.py`, add a `QAction` to `SweepTableView.__init__()`
+
+2. In the `init_actions()` method of `SweepTableView`, 
+set the menu action as checkable with `.setCheckable(True)`, 
+connect the action with `.toggled.connect(self.filter_sweeps)`, 
+and set the action as disabled initially with `.setEnabled(False)`
+
+5. In the `.filter_sweeps()` method of `SweepTableView`, add appropriate checkbox logic
+
+6. In `main.py`, set the initial status of the checkbox in `SweepPage.set_default_filter_states()`
+with `.setEnabled(True)` and `.setChecked(True)` or `.setChecked(False)`
+
+7. Also in `main.py`, add the action to the menu in `MainWindow.add_menu_actions()`

@@ -73,21 +73,21 @@ class FxData(QObject):
 
             cell_state = {"failed_fx": False, "fail_fx_message": None}
 
-            self.feature_data = {'cell_features': cell_features,
-                                 'sweep_features': sweep_features,
-                                 'cell_record': cell_record,
-                                 'sweep_records': sweep_records,
-                                 'cell_state': cell_state
-                                }
+            self.feature_data = {
+                'cell_features': cell_features,
+                'sweep_features': sweep_features,
+                'cell_record': cell_record,
+                'sweep_records': sweep_records,
+                'cell_state': cell_state
+            }
 
             self.new_state()
             self.status_message.emit("Done computing features!")
 
         except (FeatureError, IndexError) as ferr:
-            exception_message("Feature extraction error",
-                              f"failed feature extraction",
-                              ferr
-                              )
+            exception_message(
+                "Feature extraction error", f"failed feature extraction", ferr
+            )
 
 
 

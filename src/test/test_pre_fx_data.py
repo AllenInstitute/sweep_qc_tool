@@ -1,10 +1,3 @@
-import pytest
-import pytest_check as check
-
-from PyQt5.QtWidgets import QWidget
-
-import numpy as np
-
 from pre_fx_data import PreFxData
 
 from .test_sweep_plots import MockDataSet
