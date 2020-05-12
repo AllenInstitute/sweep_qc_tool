@@ -9,7 +9,6 @@ from sweep_table_model import SweepTableModel
 from sweep_table_view import SweepTableView
 from .conftest import check_mock_called_with, check_mock_not_called
 
-import pandas as pd
 
 class MockPlotter:
 
@@ -18,8 +17,6 @@ class MockPlotter:
 
     def full(self):
         return self._full
-
-
 
 
 @pytest.mark.parametrize("row", [0, 1, 2])
@@ -69,6 +66,7 @@ def test_plot_popup_click(qtbot, row, col):
         check_mock_called_with(view.popup_plot, expected, left=100, top=100)
     else:
         check_mock_not_called(view.popup_plot)
+
 
 @pytest.mark.parametrize(
     "filter_status", [[True, True], [True, False], [False, True], [False, False]]

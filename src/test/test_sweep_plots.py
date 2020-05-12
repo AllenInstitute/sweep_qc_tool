@@ -1,6 +1,7 @@
 import pytest
 import pytest_check as check
 
+import pandas as pd
 import numpy as np
 from pyqtgraph import InfiniteLine
 
@@ -71,20 +72,27 @@ class MockDataSet:
     """ A mock data set """
     @property
     def sweep_table(self):
-        return {
-            'sweep_number': list(range(0, 8)),
-            'stimulus_code': ["foo", "fooSearch", "bar", "foobar",
-                              "bat", "NucVCbat", "NucVCbiz", "NucVCfizz"]}
+        return pd.DataFrame([
+            {'sweep_number': 0, 'stimulus_code': "foo", 'passed': True},
+            {'sweep_number': 1, 'stimulus_code': "fooSearch", 'passed': None},
+            {'sweep_number': 2, 'stimulus_code': "bar", 'passed': True},
+            {'sweep_number': 3, 'stimulus_code': "foobar", 'passed': False},
+            {'sweep_number': 4, 'stimulus_code': "bat", 'passed': None},
+            {'sweep_number': 5, 'stimulus_code': "fooRamp", 'passed': False},
+            {'sweep_number': 6, 'stimulus_code': "NucVCbat", 'passed': None},
+            {'sweep_number': 7, 'stimulus_code': "NucVCbiz", 'passed': None},
+            {'sweep_number': 8, 'stimulus_code': "NucVCfizz", 'passed': None}
+            ])
 
     def sweep(self, sweep_number):
-        if sweep_number in range(0, 4):
+        if sweep_number in range(0, 5):
             return MockSweep(clamp_mode="CurrentClamp")
-        elif sweep_number in range(4, 8):
+        elif sweep_number in range(5, 9):
             return MockSweep(clamp_mode="VoltageClamp")
 
     def get_expected_stored_data(self):
-        # stored_data value: [initial_vclamp, previous_vclamp, initial_iclamp, previous_iclamp]
-        self._stored_data = [[None for _ in range(4)] for _ in range(len(self.sweep_table['sweep_number']))]
+        # stored_data values: [initial_vclamp, previous_vclamp, initial_iclamp, previous_iclamp]
+        self._stored_data = [[None for _ in range(4)] for _ in range(len(self.sweep_table))]
         initial_vclamp = None
         previous_vclamp = None
         initial_iclamp = None
@@ -118,7 +126,6 @@ class MockDataSet:
 mock_data_set = MockDataSet()
 mock_data_set.get_expected_stored_data()
 mock_plotter = SweepPlotter(data_set=mock_data_set, config=mock_config)
-
 
 
 @pytest.fixture
@@ -209,7 +216,7 @@ def test_experiment_popup_plotter_graph(plot_data, baseline, sweep_number, y_lab
 
 # stored_data values: [initial_vclamp, previous_vclamp, initial_iclamp, previous_iclamp]
 @pytest.mark.parametrize(
-    "sweep_number", list(range(0, 8))
+    "sweep_number", list(range(len(mock_data_set.sweep_table)))
 )
 def test_advance(sweep_number):
 
