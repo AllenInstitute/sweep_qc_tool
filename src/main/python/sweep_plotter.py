@@ -589,9 +589,10 @@ def experiment_plot_data(
     response = sweep.response[start_index:end_index]
     time = sweep.t[start_index:end_index]
 
-    response[np.isnan(response)] = 0.0
-    # should mean be calculated before setting nan = 0.0?
-    baseline_mean = float(np.nanmean(response[baseline_start_index: baseline_end_index]))
+    if len(response) > baseline_end_index:
+        baseline_mean = float(np.nanmean(response[baseline_start_index: baseline_end_index]))
+    else:
+        baseline_mean = float(np.nanmean(response))
 
     return PlotData(stimulus, response, time), baseline_mean
 

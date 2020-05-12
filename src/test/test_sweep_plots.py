@@ -69,10 +69,6 @@ class MockSweep:
 
 class MockDataSet:
     """ A mock data set """
-    def __init__(self):
-        self._stored_data = None
-        self.get_expected_stored_data()
-
     @property
     def sweep_table(self):
         return {
@@ -119,7 +115,10 @@ class MockDataSet:
         return self._stored_data
 
 
-mock_plotter = SweepPlotter(data_set=MockDataSet(), config=mock_config)
+mock_data_set = MockDataSet()
+mock_data_set.get_expected_stored_data()
+mock_plotter = SweepPlotter(data_set=mock_data_set, config=mock_config)
+
 
 
 @pytest.fixture

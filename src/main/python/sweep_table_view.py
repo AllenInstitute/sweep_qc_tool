@@ -182,3 +182,5 @@ class SweepTableView(QTableView):
             for index, row in enumerate(self.model().sweep_features):
                 if row['stimulus_code'][-6:] != "Search":
                     self.showRow(index)
+                else:
+                    self.hideRow(index)
