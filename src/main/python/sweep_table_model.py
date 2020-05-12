@@ -1,7 +1,7 @@
 from typing import Optional, Dict, List, Any, Sequence
 
 from PyQt5.QtCore import (
-    QAbstractTableModel, QModelIndex, pyqtSignal   #, pyqtSlot
+    QAbstractTableModel, QModelIndex, pyqtSignal
 )
 from PyQt5.QtGui import QColor
 from PyQt5 import QtCore

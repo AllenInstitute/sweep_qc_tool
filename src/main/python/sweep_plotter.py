@@ -1,6 +1,6 @@
 import io
 
-from typing import NamedTuple, Tuple, Union, Optional
+from typing import NamedTuple, Tuple, Optional
 
 from PyQt5.QtCore import QByteArray
 

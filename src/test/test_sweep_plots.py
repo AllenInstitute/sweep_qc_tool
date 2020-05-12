@@ -10,7 +10,7 @@ from sweep_plotter import (
     PulsePopupPlotter, ExperimentPopupPlotter, PlotData, SweepPlotter
 )
 
-from .conftest import check_allclose, check_mock_called_with
+from .conftest import check_allclose
 
 mock_config = SweepPlotConfig(
     test_pulse_plot_start=0.04,

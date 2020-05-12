@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHeaderView,
     QVBoxLayout,
-    QLabel,
+    QLabel
 )
 from pyqtgraph import setConfigOption
 
@@ -250,7 +250,7 @@ class Application(object):
         self.pre_fx_controller.set_output_path(output_dir)
 
         # connect components
-        # connect controller toraw data and feature extractor
+        # connect controller to raw data and feature extractor
         self.pre_fx_controller.connect(self.pre_fx_data, self.fx_data)
         # connect sweep page to raw data
         self.sweep_page.connect(self.pre_fx_data)

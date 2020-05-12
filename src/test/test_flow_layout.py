@@ -31,25 +31,31 @@ class SquareWidget(QWidget):
 def layout():
     return FlowLayout(margin=12, horizontal_spacing=24, vertical_spacing=36)
 
+
 def test_hspacing_accessor(layout):
     assert layout.horizontalSpacing() == 24
 
+
 def test_vspacing_accessor(layout):
     assert layout.verticalSpacing() == 36
+
 
 def test_add_item(layout):
     check.equal(layout.count(), 0)
     layout.addItem("foo")
     check.equal(layout.count(), 1)
-    
+
+
 def test_item_at(layout):
     layout.addItem("foo")
     assert layout.itemAt(0) == "foo"
+
 
 def test_take_at(layout):
     layout.addItem("foo")
     check.equal(layout.takeAt(0), "foo")
     check.equal(layout.count(), 0)
+
 
 def test_minimum_size(layout):
     layout.addItem(RectangularItem(4))

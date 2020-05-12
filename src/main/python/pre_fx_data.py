@@ -1,7 +1,7 @@
 import json
 import logging
 import copy
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Optional, List, Dict, Any
 import ipfx
 from PyQt5.QtCore import QObject, pyqtSignal
 

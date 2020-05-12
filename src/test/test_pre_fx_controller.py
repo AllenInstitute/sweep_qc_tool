@@ -1,6 +1,6 @@
 import pytest
 
-from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 
 from pre_fx_controller import PreFxController
 
