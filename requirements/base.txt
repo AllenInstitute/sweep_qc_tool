@@ -12,7 +12,7 @@ colorama==0.4.3
 cycler==0.10.0
 decorator==4.4.2
 dictdiffer==0.8.1
-fbs===0.8.5-SNAPSHOT
+fbs===0.8.5
 future==0.18.2
 Glymur==0.8.19
 h5py==2.10.0
