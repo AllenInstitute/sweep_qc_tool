@@ -38,8 +38,8 @@ class SweepPage(QWidget):
 
     def __init__(self, sweep_plot_config: SweepPlotConfig):
         """ Holds and displays a table view (and associated model) containing 
-        information about individual sweeps. Filteres out sweeps based on
-        certain stimulus codes when checkboxes are ticked/unticked
+        information about individual sweeps.
+
         """
 
         super().__init__()

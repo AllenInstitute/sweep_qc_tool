@@ -16,6 +16,7 @@ class FxData(QObject):
         """ Runs intrinsic property feature extraction and keeps track of
         whether or not this information is up to date based on whether the
         data set has changed or the qc state has changed.
+
         """
         super().__init__()
         self._state_out_of_date: bool = False
@@ -28,6 +29,7 @@ class FxData(QObject):
     def out_of_date(self):
         """ Emit state outdated signal when data changes and therefore features
         are out of date.
+
         """
         self.state_outdated.emit()
         self._state_out_of_date = True
@@ -45,6 +47,7 @@ class FxData(QObject):
                           ):
         """ Updates information to used for intrinsic property feature
         extraction when data or qc states change.
+
         """
         self.out_of_date()
         self.input_nwb_file = nwb_path
@@ -53,12 +56,13 @@ class FxData(QObject):
         self.cell_info = cell_info
 
     def connect(self, pre_fx_data):
-        """ Connect signal indicating data has changed to self."""
+        """ Connect signal indicating data has changed to self. """
         pre_fx_data.data_changed.connect(self.set_fx_parameters)
 
     def run_feature_extraction(self):
         """ Runs intrinsic property feature extraction on sweeps that have
-        passed both auto QC and manual QC
+        passed both auto QC and manual QC.
+
         """
 
         self.status_message.emit("Computing features, please wait.")
