@@ -73,15 +73,15 @@ class MockDataSet:
     @property
     def sweep_table(self):
         return pd.DataFrame([
-            {'sweep_number': 0, 'stimulus_code': "foo", 'passed': True},
-            {'sweep_number': 1, 'stimulus_code': "fooSearch", 'passed': None},
-            {'sweep_number': 2, 'stimulus_code': "bar", 'passed': True},
-            {'sweep_number': 3, 'stimulus_code': "foobar", 'passed': False},
-            {'sweep_number': 4, 'stimulus_code': "bat", 'passed': None},
-            {'sweep_number': 5, 'stimulus_code': "fooRamp", 'passed': False},
-            {'sweep_number': 6, 'stimulus_code': "NucVCbat", 'passed': None},
-            {'sweep_number': 7, 'stimulus_code': "NucVCbiz", 'passed': None},
-            {'sweep_number': 8, 'stimulus_code': "NucVCfizz", 'passed': None}
+            {'sweep_number': 0, 'stimulus_code': "foo"},
+            {'sweep_number': 1, 'stimulus_code': "fooSearch"},
+            {'sweep_number': 2, 'stimulus_code': "bar"},
+            {'sweep_number': 3, 'stimulus_code': "foobar"},
+            {'sweep_number': 4, 'stimulus_code': "bat"},
+            {'sweep_number': 5, 'stimulus_code': "fooRamp"},
+            {'sweep_number': 6, 'stimulus_code': "NucVCbat"},
+            {'sweep_number': 7, 'stimulus_code': "NucVCbiz"},
+            {'sweep_number': 8, 'stimulus_code': "NucVCfizz"}
             ])
 
     def sweep(self, sweep_number):

@@ -61,8 +61,8 @@ class SweepTableModel(QAbstractTableModel):
         ----------
         data : 
             Will be used as the underlying data store. Will emit notifications when 
-            data has been updated. Will recieve notifications when users update 
-            QC states for individual sw eeps.
+            data has been updated. Will receive notifications when users update
+            QC states for individual sweeps.
 
         """
 
@@ -74,7 +74,7 @@ class SweepTableModel(QAbstractTableModel):
         sweep_features: List[Dict], 
         sweep_states: List, 
         manual_qc_states: Dict[int, str], 
-        dataset: EphysDataSet
+        data_set: EphysDataSet
     ):
         """ Called when the underlying data has been completely replaced.
         Clears any old data and populates the table model with new data.
@@ -89,8 +89,8 @@ class SweepTableModel(QAbstractTableModel):
             automatic QC results for that sweep.
         manual_qc_states : Dict[int, str]
             For each sweep, whether the user has manually passed or failed it (or left it untouched)
-        dataset : EphysDataSet
-            The underlying data. Used to extract sweepwise voltage traces
+        data_set : EphysDataSet
+            The underlying data. Used to extract sweep-wise voltage traces
 
         """
         # grabbing sweep features so that sweep table view can filter based on these values
@@ -102,7 +102,7 @@ class SweepTableModel(QAbstractTableModel):
             self._data = []
             self.endRemoveRows()
 
-        plotter = SweepPlotter(dataset, self.plot_config)
+        plotter = SweepPlotter(data_set, self.plot_config)
 
         self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
 
@@ -173,9 +173,8 @@ class SweepTableModel(QAbstractTableModel):
         ----------
         index : QModelIndex
             Which table cell to read.
-        role : int
-            How the data is being accessed. Currently DisplayRole and EditRole are 
-            supported.
+        role : QtCore.Qt.ItemDataRole
+            the role for the data being accessed
 
         Returns
         -------
@@ -251,7 +250,7 @@ class SweepTableModel(QAbstractTableModel):
     def setData(
             self,
             index: QModelIndex,
-            value: str,  # TODO: typing
+            value: str,
             role: QtCore.Qt.ItemDataRole = QtCore.Qt.EditRole
     ) -> bool:
         """ Updates the data at the supplied index.

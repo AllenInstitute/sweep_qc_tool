@@ -213,7 +213,7 @@ class PreFxData(QObject):
         Parameters
         ----------
         path : 
-            load dataset from here
+            load data set from here
 
         """
         try:
@@ -308,13 +308,14 @@ class PreFxData(QObject):
         data_set.sweep_table.sort_values(by='sweep_number', axis=0, inplace=True)
 
         self.status_message.emit("Performing auto QC...")
-        # cell_features: overall QC features for the cell
+        # cell_features: dictionary of QC information about the cell
         # cell_tags: QC details about the cell (e.g. 'Blowout is not available'
-        # sweep_features: list of dictionaries containing sweep features for
-        #   sweeps that have been filtered and have passed auto-qc
+        # sweep_features: list of dictionaries containing qc information for
+        #   sweeps that that have gone through auto qc
         cell_features, cell_tags, pre_qc_sweep_features = extract_qc_features(data_set)
 
-        # cell_state: list of dictionaries containing sweep pass/fail states
+        # sweep_states: list of dictionaries containing sweep pass/fail states
+        # cell_state: dictionary of qc states for the cell related to cell_features
         cell_state, cell_features, sweep_states, post_qc_sweep_features = run_qc(
             stimulus_ontology, cell_features, pre_qc_sweep_features, qc_criteria
         )

@@ -93,7 +93,8 @@ class SweepTableView(QTableView):
 
         Parameters
         ----------
-        all are ignored. They are present because this method is triggered by a data-carrying signal
+        All are ignored. They are present because this method is triggered
+        by a data-carrying signal.
 
         """
 
@@ -118,6 +119,7 @@ class SweepTableView(QTableView):
         if not index.column() in {test_column, exp_column}:
             return
 
+        # display popup plot at (100, 100) for user convenience
         self.popup_plot(self.model().data(index).full(), left=100, top=100)
 
     def popup_plot(self, graph: QWidget, left: int = 0, top: int = 0):
@@ -176,7 +178,7 @@ class SweepTableView(QTableView):
                 else:
                     self.hideRow(index)
 
-        # if neither are checked then show everything except for 'Search'
+        # if neither are checked, then show everything except for 'Search'
         else:
             for index, row in enumerate(self.model().sweep_features):
                 if row['stimulus_code'][-6:] != "Search":
