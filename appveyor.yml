@@ -18,9 +18,9 @@ install:
 build_script:
   - "python -m virtualenv --clear %VENV_DIR%"
   - "%VENV_DIR%\\scripts\\activate.bat"
+  - python -m pip install -r requirements/test.txt
   - python -m pip install -r requirements/base.txt
   - python -m pip install -r requirements/windows.txt
-  - python -m pip install -r requirements/test.txt
   - pytest src/test
   - python -m fbs freeze --debug
   - target\sweep_qc_tool\sweep_qc_tool.exe -h

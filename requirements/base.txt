@@ -1,6 +1,6 @@
+setuptools==44.0.0
 git+https://github.com/nilegraddis/fbs@additional_hooks_dir
 PyQt5==5.9.2
 PyInstaller==3.4
 git+https://github.com/alleninstitute/ipfx@ff0614e2ba7ae1fac227c4d2f58b78799430ab78
 pyqtgraph==0.10.0
-setuptools==44.0.0
