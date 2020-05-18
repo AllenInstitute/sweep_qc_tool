@@ -79,7 +79,7 @@ class SweepPage(QWidget):
         self.sweep_view.filter_auto_qc_sweeps_action.setEnabled(True)
         self.sweep_view.filter_channel_sweeps_action.setEnabled(True)
 
-        # unset default check states
+        # unset default check states (needed  to trigger filter_sweeps())
         self.sweep_view.filter_auto_qc_sweeps_action.setChecked(False)
 
         # set default check states
