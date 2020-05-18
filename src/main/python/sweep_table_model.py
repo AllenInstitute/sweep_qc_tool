@@ -98,13 +98,15 @@ class SweepTableModel(QAbstractTableModel):
 
         # clears any data that the table is currently holding
         if self.rowCount() > 0:
-            self.beginRemoveRows(QModelIndex(), 1, self.rowCount())
+            # simply resetting the model here is easier than calling dataChanged()
+            self.beginResetModel()
             self._data = []
-            self.endRemoveRows()
+            # self.removeRows(0, self.rowCount(), QModelIndex())
+            self.endResetModel()
 
         plotter = SweepPlotter(data_set, self.plot_config)
 
-        self.beginInsertRows(QModelIndex(), 1, len(sweep_features))
+        self.beginInsertRows(QModelIndex(), 0, len(sweep_features)-1)
 
         # populates the sweep table model
         for index, sweep in enumerate(sweep_features):
@@ -136,6 +138,17 @@ class SweepTableModel(QAbstractTableModel):
 
         # emit signal indicating that the model now has new data in it
         self.new_data.emit()
+
+    def removeRows(self, start_row: int, end_row: int, parent=None, *args, **kwargs):
+        self.beginRemoveRows(parent, start_row, end_row)
+        for row in reversed(range(start_row, end_row)):
+            self.removeRow(row, parent)
+        self.endRemoveRows()
+        return True
+
+    def removeRow(self, row_index: int, parent=None, *args, **kwargs):
+        self._data.pop(row_index)
+        return True
 
     def rowCount(self, *args, **kwargs):
         """ The number of rows in the sweep table model, which should be the
