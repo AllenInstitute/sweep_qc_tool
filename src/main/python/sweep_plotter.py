@@ -20,11 +20,11 @@ DEFAULT_FIGSIZE = (8, 8)
 
 TEST_PULSE_CURRENT_COLOR = "#000000"
 # hex color code with transparency added for previous and initial test pulses
-TEST_PULSE_PREV_COLOR = "#0000ff50"
-TEST_PULSE_INIT_COLOR = "#ff000050"
+TEST_PULSE_PREV_COLOR = "#0000ff70"
+TEST_PULSE_INIT_COLOR = "#ff000070"
 
 EXP_PULSE_CURRENT_COLOR = "#000000"
-EXP_PULSE_BASELINE_COLOR = "#0000ff"
+EXP_PULSE_BASELINE_COLOR = "#0000ff70"
 
 
 class SweepPlotConfig(NamedTuple):
@@ -76,42 +76,22 @@ class PopupPlotter:
         self.sweep_number = sweep_number
         self.y_label = y_label
 
-    def make_graph(self):
+    def initialize_plot(self, graph: PlotWidget):
         """ Generates an interactive plot widget from this plotter's data. This
         function is used for easy implementation of __call__() in child classes
 
         Returns
         -------
-        graph : PlotWidget
-            a pyqtgraph interactive PlotWidget that pops up when user clicks
-            on a thumbnail of the graph
+        plot : PlotWidget PlotItem
+            a plot item that can be plotted upon
 
         """
-
-        graph = PlotWidget()
         plot = graph.getPlotItem()
-
         plot.addLegend()
         plot.setLabel("left", self.y_label)
         plot.setLabel("bottom", "time (s)")
 
-        plot.plot(self.plot_data.time, self.plot_data.response,
-                  pen=mkPen(color=EXP_PULSE_CURRENT_COLOR, width=2),
-                  name=f"sweep {self.sweep_number}")
-
-        return graph
-
-    def __call__(self):
-        """ Generates an interactive plot widget from this plotter's data.
-
-        Returns
-        -------
-        graph : PlotWidget
-            a pyqtgraph interactive PlotWidget that pops up when user clicks
-            on a thumbnail of the graph
-
-        """
-        return self.make_graph()
+        return plot
 
 
 class ExperimentPopupPlotter(PopupPlotter):
@@ -152,13 +132,19 @@ class ExperimentPopupPlotter(PopupPlotter):
             on a thumbnail of the graph
 
         """
-        graph = self.make_graph()
-        plot = graph.getPlotItem()
+        graph = PlotWidget()
+        plot = self.initialize_plot(graph)
 
         plot.addLine(
             y=self.baseline,
             pen=mkPen(color=EXP_PULSE_BASELINE_COLOR, width=2),
             label="baseline"
+        )
+
+        plot.plot(
+            self.plot_data.time, self.plot_data.response,
+            pen=mkPen(color=EXP_PULSE_CURRENT_COLOR, width=2),
+            name=f"sweep {self.sweep_number}"
         )
 
         return graph
@@ -171,7 +157,7 @@ class PulsePopupPlotter(PopupPlotter):
                  'sweep_number', 'y_label']
 
     def __init__(
-        self, 
+        self,
         plot_data: PlotData,
         previous_plot_data: PlotData,
         initial_plot_data: PlotData,
@@ -212,18 +198,28 @@ class PulsePopupPlotter(PopupPlotter):
 
         """
 
-        graph = self.make_graph()
-        plot = graph.getPlotItem()
+        graph = PlotWidget()
+        plot = self.initialize_plot(graph)
 
         if self.initial_plot_data is not None:
-            plot.plot(self.initial_plot_data.time, self.initial_plot_data.response,
-                      pen=mkPen(color=TEST_PULSE_INIT_COLOR, width=2),
-                      name="initial")
+            plot.plot(
+                self.initial_plot_data.time, self.initial_plot_data.response,
+                pen=mkPen(color=TEST_PULSE_INIT_COLOR, width=2),
+                name="initial"
+            )
 
         if self.previous_plot_data is not None:
-            plot.plot(self.previous_plot_data.time, self.previous_plot_data.response,
-                      pen=mkPen(color=TEST_PULSE_PREV_COLOR, width=2),
-                      name="previous")
+            plot.plot(
+                self.previous_plot_data.time, self.previous_plot_data.response,
+                pen=mkPen(color=TEST_PULSE_PREV_COLOR, width=2),
+                name="previous"
+            )
+
+        plot.plot(
+            self.plot_data.time, self.plot_data.response,
+            pen=mkPen(color=TEST_PULSE_CURRENT_COLOR, width=2),
+            name=f"sweep {self.sweep_number}"
+        )
 
         return graph
 
