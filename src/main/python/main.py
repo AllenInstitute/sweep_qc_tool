@@ -22,6 +22,33 @@ from fx_data import FxData
 from pre_fx_controller import PreFxController
 from cell_feature_page import CellFeaturePage
 
+""" Sweep QC Tool
+---------------------
+This program can load one of the Allen Institute's electrophysiology data sets
+stored in the .nwb file format. The program then displays the ephys sweeps that
+were recorded during the experiment, which the user can then use to perform 
+manual QC. Once the user is done performing manual QC they can then save the QC
+states in a .json file. Currently only data from the Institute's In Vitro 
+Single Cell Characterization (IVSCC) pipeline is supported.
+
+How to make your own sweep filters
+----------------------------------
+
+1. In sweep_table_view.py, add a QAction to `SweepTableView.__init__()`
+
+2. In the init_actions() method of SweepTableView, 
+set the menu action as checkable with .setCheckable(True), 
+connect the action with .toggled.connect(self.filter_sweeps), 
+and set the action as disabled initially with .setEnabled(False)
+
+3. In the .filter_sweeps() method of `SweepTableView`, add appropriate checkbox logic
+
+4. In main.py, set the initial status of the checkbox in SweepPage.set_default_filter_states()
+with .setEnabled(True) and .setChecked(True) or .setChecked(False)
+
+5. Also in `main.py`, add the action to the menu in MainWindow.add_menu_actions()
+
+"""
 
 class SweepPage(QWidget):
 
