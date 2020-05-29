@@ -10,7 +10,7 @@ from ipfx.qc_feature_extractor import cell_qc_features, sweep_qc_features
 from ipfx.qc_feature_evaluator import qc_experiment, DEFAULT_QC_CRITERIA_FILE
 from ipfx.bin.run_qc import qc_summary
 from ipfx.stimulus import StimulusOntology
-from ipfx.data_set_utils import create_data_set
+from ipfx.dataset.create import create_ephys_data_set
 from ipfx.sweep_props import drop_tagged_sweeps
 from error_handling import exception_message
 from marshmallow import ValidationError
@@ -296,13 +296,10 @@ class PreFxData(QObject):
         """
         self.status_message.emit("Creating data set...")
         # Creates the data set using input parameters
-        data_set = create_data_set(
+        data_set = create_ephys_data_set(
             sweep_info=None,
             nwb_file=nwb_path,
-            ontology=stimulus_ontology,
-            api_sweeps=True,
-            h5_file=None,
-            validate_stim=True
+            ontology=stimulus_ontology
         )
 
         data_set.sweep_table.sort_values(by='sweep_number', axis=0, inplace=True)
