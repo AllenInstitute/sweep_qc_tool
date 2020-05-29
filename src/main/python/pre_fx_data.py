@@ -11,7 +11,7 @@ from ipfx.qc_feature_extractor import cell_qc_features, sweep_qc_features
 from ipfx.qc_feature_evaluator import qc_experiment, DEFAULT_QC_CRITERIA_FILE
 from ipfx.bin.run_qc import qc_summary
 from ipfx.stimulus import StimulusOntology, Stimulus
-from ipfx.data_set_utils import create_data_set
+from ipfx.dataset.create import create_ephys_data_set
 from ipfx.sweep_props import drop_tagged_sweeps
 import ipfx.sweep_props as sweep_props
 from error_handling import exception_message
@@ -260,13 +260,10 @@ class PreFxData(QObject):
 
     def run_extraction_and_auto_qc(self, nwb_path, stimulus_ontology, qc_criteria, commit=True):
 
-        data_set = create_data_set(
+        data_set = create_ephys_data_set(
             sweep_info=None,
             nwb_file=nwb_path,
-            ontology=stimulus_ontology,
-            api_sweeps=True,
-            h5_file=None,
-            validate_stim=True
+            ontology=stimulus_ontology
         )
 
         cell_features, cell_tags, sweep_features = extract_qc_features(data_set)
