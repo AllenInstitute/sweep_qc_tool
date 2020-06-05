@@ -53,6 +53,10 @@ class SweepTableModel(QAbstractTableModel):
 
         self.plot_config = plot_config
         self.sweep_features: Optional[list] = None
+        self.sweep_states: Optional[list] = None
+        self.manual_qc_states: Optional[list] = None
+
+        self.sweep_types: Optional[Dict[str, set]] = None
     
     def connect(self, data: PreFxData):
         """ Set up signals and slots for communication with the underlying data store.
@@ -88,13 +92,25 @@ class SweepTableModel(QAbstractTableModel):
             A list of dictionaries. Each element contains ancillary information about
             automatic QC results for that sweep.
         manual_qc_states : Dict[int, str]
-            For each sweep, whether the user has manually passed or failed it (or left it untouched)
+            For each sweep, whether the user has manually passed or failed it
+            (or left it untouched)
         data_set : EphysDataSet
             The underlying data. Used to extract sweep-wise voltage traces
 
         """
-        # grabbing sweep features so that sweep table view can filter based on these values
+        # dictionary of sweep types used for filtering sweeps in table view
+        self.sweep_types: Dict[str, set] = {
+            'v_clamp': set(), 'i_clamp': set(), 'pipeline': set(),
+            'search': set(), 'ex_tp': set(),   'nuc_vc': set(),
+            'core_one': set(), 'core_two': set(), 'unknown': set(),
+            'auto_pass': set(), 'auto_fail': set(), 'no_auto_qc': set()
+        }
+
+        # grabbing sweep features, auto qc states, and manual qc states
+        #   so that sweep table view can filter based on these values
         self.sweep_features = sweep_features
+        self.sweep_states = sweep_states
+        self.manual_qc_states = manual_qc_states
 
         # clears any data that the table is currently holding
         if self.rowCount() > 0:
@@ -110,14 +126,41 @@ class SweepTableModel(QAbstractTableModel):
 
         # populates the sweep table model
         for index, sweep in enumerate(sweep_features):
+            # defines vclamp and iclamp sweeps
+            if sweep['clamp_mode'] == "VoltageClamp":
+                self.sweep_types['v_clamp'].add(index)
+            else:
+                self.sweep_types['i_clamp'].add(index)
+
+            # define qc pipeline sweeps
+            if sweep['passed'] is not None:
+                self.sweep_types['pipeline'].add(index)
+
+            # define sweep types based on stimulus codes
+            if sweep['stimulus_code'][-6:] == "Search":
+                self.sweep_types['search'].add(index)
+            elif sweep['stimulus_code'][0:4] == "EXTP":
+                self.sweep_types['ex_tp'].add(index)
+            elif sweep['stimulus_code'][0:5] == "NucVC":
+                self.sweep_types['nuc_vc'].add(index)
+            elif sweep['stimulus_code'][0] == "X":
+                self.sweep_types['core_one'].add(index)
+            elif sweep['stimulus_code'][0] == "C":
+                self.sweep_types['core_two'].add(index)
+            else:
+                self.sweep_types['unknown'].add(index)
+
             # populates auto qc state column based on sweep states list
             if sweep_states[index]['passed']:
                 auto_qc_state = "passed"
+                self.sweep_types['auto_pass'].add(index)
             # sweep state should be None if it did not go through auto qc
             elif sweep_states[index]['passed'] is None:
                 auto_qc_state = "n/a"
+                self.sweep_types['no_auto_qc'].add(index)
             else:
                 auto_qc_state = "failed"
+                self.sweep_types['auto_fail'].add(index)
 
             # generate thumbnail / popup plot pairs for each sweep
             test_pulse_plots, experiment_plots = plotter.advance(index)
