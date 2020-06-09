@@ -81,19 +81,52 @@ def test_filter_sweeps(qtbot, filter_status):
         SweepPage.colnames
     )
 
-    features = [
-        {'sweep_number': 0, 'stimulus_code': "foo", 'passed': True},
-        {'sweep_number': 1, 'stimulus_code': "fooSearch", 'passed': None},
-        {'sweep_number': 2, 'stimulus_code': "bar", 'passed': True},
-        {'sweep_number': 3, 'stimulus_code': "foobar", 'passed': False},
-        {'sweep_number': 4, 'stimulus_code': "bat", 'passed': None},
-        {'sweep_number': 5, 'stimulus_code': "NucVCbat", 'passed': None},
-        {'sweep_number': 6, 'stimulus_code': "NucVCbiz", 'passed': None},
-        {'sweep_number': 7, 'stimulus_code': "NucVCfizz", 'passed': None}
-    ]
+    # mock dictionary of sets defining sweep types
+    sweep_types = {
+        'v_clamp': {
+            0, 1, 2, 3, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
+        },
+        'i_clamp': {
+            4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+            22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+            39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+            56, 57, 58, 59, 72
+        },
+        'pipeline': {
+            4, 6, 7, 8, 10, 11, 13, 15, 24, 25, 26, 27, 29, 32, 33, 34, 45, 46,
+            47, 48, 49, 50, 51, 57, 58, 59
+        },
+        'search': {
+            35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 16, 17, 18, 19, 20, 21, 22
+        },
+        'ex_tp': {0, 1, 2, 3, 60},
+        'nuc_vc': {61, 62, 63, 64, 65, 66, 67, 68, 69, 70},
+        'core_one': {
+            4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 24, 25, 26, 27, 28,
+            29, 30, 31, 32, 33, 34, 45, 46, 47, 48, 49, 50, 51
+        },
+        'core_two': {52, 53, 54, 55, 56, 57, 58, 59},
+        'unknown': {71, 72},
+        'auto_pass': {
+            4, 6, 7, 8, 11, 13, 15, 24, 25, 26, 27, 32, 33, 34, 45, 46, 47, 48,
+            49, 50, 51, 57, 58, 59
+        },
+        'auto_fail': {
+            5, 9, 10, 12, 14, 52, 53, 54, 23, 55, 56, 28, 29, 30, 31
+        },
+        'no_auto_qc': {
+            0, 1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 35, 36, 37, 38, 39, 40, 41,
+            42, 43, 44, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
+        }
+    }
 
-    model.sweep_features = features
-    num_rows = len(features)
+    model.sweep_types = sweep_types
+
+    # creating a set of all sweeps to determine number of rows
+    all_sweeps = set()
+    for value in sweep_types.values():
+        all_sweeps.update(value)
+    num_rows = len(all_sweeps)
 
     model.beginInsertRows(QModelIndex(), 1,  num_rows + 1)
     for ii in range(num_rows):
@@ -120,30 +153,30 @@ def test_filter_sweeps(qtbot, filter_status):
     view.filter_channel_sweeps_action.setChecked(filter_status[1])
 
     if filter_status[0] and filter_status[1]:
-        for index, row in enumerate(model.sweep_features):
-            if row['passed'] is not None \
-                    or row['stimulus_code'][0:5] == "NucVC":
+        for index in range(num_rows):
+            if index in sweep_types['pipeline'].union(sweep_types['nuc_vc']
+            ):
                 assert view.isRowHidden(index) is False
             else:
                 assert view.isRowHidden(index) is True
 
     elif filter_status[0]:
-        for index, row in enumerate(model.sweep_features):
-            if row['passed'] is not None:
+        for index in range(num_rows):
+            if index in sweep_types['pipeline']:
                 assert view.isRowHidden(index) is False
             else:
                 assert view.isRowHidden(index) is True
 
     elif filter_status[1]:
-        for index, row in enumerate(model.sweep_features):
-            if row['stimulus_code'][0:5] == "NucVC":
+        for index in range(num_rows):
+            if index in sweep_types['nuc_vc']:
                 assert view.isRowHidden(index) is False
             else:
                 assert view.isRowHidden(index) is True
 
     else:
-        for index, row in enumerate(model.sweep_features):
-            if row['stimulus_code'][-6:] != "Search":
+        for index in range(num_rows):
+            if index not in sweep_types['search']:
                 assert view.isRowHidden(index) is False
             else:
                 assert view.isRowHidden(index) is True
