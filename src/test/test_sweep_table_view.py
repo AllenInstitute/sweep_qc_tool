@@ -145,12 +145,12 @@ def test_filter_sweeps(qtbot, filter_status):
     view.setModel(model)
 
     # setting filter checkboxes to initial values on data set loaded
-    view.filter_auto_qc_sweeps_action.setChecked(True)
-    view.filter_channel_sweeps_action.setChecked(False)
+    view.view_pipeline.setChecked(True)
+    view.view_nuc_vc.setChecked(False)
 
     # changing status to what user would select
-    view.filter_auto_qc_sweeps_action.setChecked(filter_status[0])
-    view.filter_channel_sweeps_action.setChecked(filter_status[1])
+    view.view_pipeline.setChecked(filter_status[0])
+    view.view_nuc_vc.setChecked(filter_status[1])
 
     if filter_status[0] and filter_status[1]:
         for index in range(num_rows):

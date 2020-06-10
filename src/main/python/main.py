@@ -50,6 +50,7 @@ with .setEnabled(True) and .setChecked(True) or .setChecked(False)
 
 """
 
+
 class SweepPage(QWidget):
 
     colnames: tuple = (
@@ -102,16 +103,34 @@ class SweepPage(QWidget):
 
     def set_default_filter_states(self):
         """ Sets the default checkbox states when a new data set is loaded """
-        # enable checkboxes when data is loaded
-        self.sweep_view.filter_auto_qc_sweeps_action.setEnabled(True)
-        self.sweep_view.filter_channel_sweeps_action.setEnabled(True)
 
-        # unset default check states (needed  to trigger filter_sweeps())
-        self.sweep_view.filter_auto_qc_sweeps_action.setChecked(False)
+        # initialize set of all sweeps
+        # self.sweep_view.all_sweeps = set(range(self.sweep_model.rowCount()))
+
+        # enable checkboxes when data is loaded
+        self.sweep_view.view_all_sweeps.setEnabled(True)
 
         # set default check states
-        self.sweep_view.filter_auto_qc_sweeps_action.setChecked(True)
-        self.sweep_view.filter_channel_sweeps_action.setChecked(False)
+        self.sweep_view.view_nuc_vc.setChecked(False)
+
+        # check if sweeps of certain types exist and enable appropriate actions
+        if self.sweep_model.sweep_types['pipeline']:
+            self.sweep_view.view_pipeline.setEnabled(True)
+            self.sweep_view.view_pipeline.setChecked(True)
+            # set all sweeps unchecked if pipeline sweep exist
+            self.sweep_view.view_all_sweeps.setChecked(False)
+        else:
+            self.sweep_view.view_pipeline.setEnabled(False)
+            # set all sweeps checked if no pipeline sweeps
+            self.sweep_view.view_all_sweeps.setChecked(True)
+
+        if self.sweep_model.sweep_types['nuc_vc']:
+            self.sweep_view.view_nuc_vc.setEnabled(True)
+        else:
+            self.sweep_view.view_nuc_vc.setEnabled(False)
+
+        # trigger view pipeline sweeps
+        self.sweep_view.filter_sweeps()
 
 
 class PlotPage(QWidget):
@@ -214,8 +233,9 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
 
         # add view menu actions
-        self.view_menu.addAction(sweep_page.sweep_view.filter_auto_qc_sweeps_action)
-        self.view_menu.addAction(sweep_page.sweep_view.filter_channel_sweeps_action)
+        self.view_menu.addAction(sweep_page.sweep_view.view_all_sweeps)
+        self.view_menu.addAction(sweep_page.sweep_view.view_pipeline)
+        self.view_menu.addAction(sweep_page.sweep_view.view_nuc_vc)
 
     def setup_status_bar(self, pre_fx_data: PreFxData, fx_data: FxData):
         """ Sets up a status bar, which reports the current state of the app. 

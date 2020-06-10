@@ -100,10 +100,11 @@ class SweepTableModel(QAbstractTableModel):
         """
         # dictionary of sweep types used for filtering sweeps in table view
         self.sweep_types: Dict[str, set] = {
+            'all_sweeps': set(range(len(sweep_features))),
             'v_clamp': set(), 'i_clamp': set(), 'pipeline': set(),
-            'search': set(), 'ex_tp': set(),   'nuc_vc': set(),
-            'core_one': set(), 'core_two': set(), 'unknown': set(),
-            'auto_pass': set(), 'auto_fail': set(), 'no_auto_qc': set()
+            'search': set(), 'ex_tp': set(), 'nuc_vc': set(),
+            'core_one': set(), 'core_two': set(), 'auto_pass': set(),
+            'auto_fail': set(), 'no_auto_qc': set(), 'unknown': set()
         }
 
         # grabbing sweep features, auto qc states, and manual qc states
@@ -126,7 +127,7 @@ class SweepTableModel(QAbstractTableModel):
 
         # populates the sweep table model
         for index, sweep in enumerate(sweep_features):
-            # defines vclamp and iclamp sweeps
+            # define vclamp and iclamp sweeps
             if sweep['clamp_mode'] == "VoltageClamp":
                 self.sweep_types['v_clamp'].add(index)
             else:
