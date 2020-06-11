@@ -160,16 +160,6 @@ class SweepTableView(QTableView):
         popup.move(left, top)
         popup.exec()
 
-    # def update_sweep_view(self):
-    #     visible_sweep_codes: list = ['foo']
-    #     hidden_sweep_codes: list = ['bar']
-    #
-    #     for index, row in enumerate(self.model().sweep_features):
-    #         if row['stimulus_code'] in visible_sweep_codes:
-    #             self.showRow(index)
-    #         elif row['stimulus_code'] in hidden_sweep_codes:
-    #             self.hideRow(index)
-
     def filter_sweeps(self):
         """ Filters the table down to sweeps based on the checkboxes that are
         check in the view menu. If 'Auto QC sweeps' is checked then it will
@@ -212,78 +202,3 @@ class SweepTableView(QTableView):
                 self.showRow(index)
             else:
                 self.hideRow(index)
-
-        # # if both are checked, then show auto QC and channel sweeps
-        # if self.view_pipeline.isChecked() \
-        #         and self.view_nuc_vc.isChecked():
-        #     for index in range(self.model().rowCount()):
-        #         if index in self.model().sweep_types['pipeline'].union(
-        #             self.model().sweep_types['nuc_vc']
-        #         ):
-        #             self.showRow(index)
-        #         else:
-        #             self.hideRow(index)
-        #
-        # # if only auto QC is checked, then only show auto QC
-        # elif self.view_pipeline.isChecked():
-        #     for index in range(self.model().rowCount()):
-        #         if index in self.model().sweep_types['pipeline']:
-        #             self.showRow(index)
-        #         else:
-        #             self.hideRow(index)
-        #
-        # # if only channel sweeps are checked, then only show channel sweeps
-        # elif self.view_nuc_vc.isChecked():
-        #     for index in range(self.model().rowCount()):
-        #         if index in self.model().sweep_types['nuc_vc']:
-        #             self.showRow(index)
-        #         else:
-        #             self.hideRow(index)
-        #
-        # # if neither are checked, then show everything except for 'Search'
-        # else:
-        #     for index in range(self.model().rowCount()):
-        #         if index not in self.model().sweep_types['search']:
-        #             self.showRow(index)
-        #         else:
-        #             self.hideRow(index)
-
-    # def show_v_clamp(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['v_clamp'])
-    #
-    # def show_i_clamp(self):
-    #     """ Show current clamp sweeps. """
-    #     self.visible_sweeps.update(self.model().sweep_types['i_clamp'])
-    #
-    # def show_pipeline(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['pipeline'])
-    #
-    # def show_search(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['search'])
-    #
-    # def show_ex_tp(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['ex_tp'])
-    #
-    # def show_nuc_vc(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['nuv_vc'])
-    #
-    # def show_core_one(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['core_one'])
-    #
-    # def show_core_two(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['core_two'])
-    #
-    # def show_unkown(self):
-    #     self.visible_sweeps.update(self.model().sweep_types['unknown'])
-    #
-    # def show_auto_pass(self):
-    #     """ Show sweeps that passed all auto qc. """
-    #     self.visible_sweeps.update(self.model().sweep_types['auto_pass'])
-    #
-    # def show_auto_fail(self):
-    #     """ Show sweeps that failed auto qc at some point. """
-    #     self.visible_sweeps.update(self.model().sweep_types['auto_fail'])
-    #
-    # def show_no_auto_qc(self):
-    #     """ Show sweeps that are not 'Search' or part of auto-qc pipeline. """
-    #     self.visible_sweeps.update(self.model().sweep_types['no_auto_qc'])
