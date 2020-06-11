@@ -69,9 +69,17 @@ def test_plot_popup_click(qtbot, row, col):
 
 
 @pytest.mark.parametrize(
-    "filter_status", [[True, True], [True, False], [False, True], [False, False]]
+    "filter_status", [
+        [True, True, True], [True, True, False], [True, False, True], [True, False, False],
+        [False, True, True], [False, True, False], [False, False, True], [False, False, False]
+    ]
 )
 def test_filter_sweeps(qtbot, filter_status):
+    """ Filter statuses indexed as follows:
+        filter_status[0] = all sweeps
+        filter_status[1] = pipeline sweeps
+        filter_status[2] = channel recording sweeps
+        """
     model = SweepTableModel(
         SweepPage.colnames,
         SweepPlotConfig(0, 1, 2, 3, 4, 5, 6)
@@ -83,14 +91,21 @@ def test_filter_sweeps(qtbot, filter_status):
 
     # mock dictionary of sets defining sweep types
     sweep_types = {
+        'all_sweeps': {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+            36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
+            53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+            70, 71, 72
+        },
         'v_clamp': {
-            0, 1, 2, 3, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
+            0, 1, 2, 3, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
         },
         'i_clamp': {
             4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
             22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
             39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
-            56, 57, 58, 59, 72
+            56, 57, 58, 59
         },
         'pipeline': {
             4, 6, 7, 8, 10, 11, 13, 15, 24, 25, 26, 27, 29, 32, 33, 34, 45, 46,
@@ -100,24 +115,24 @@ def test_filter_sweeps(qtbot, filter_status):
             35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 16, 17, 18, 19, 20, 21, 22
         },
         'ex_tp': {0, 1, 2, 3, 60},
-        'nuc_vc': {61, 62, 63, 64, 65, 66, 67, 68, 69, 70},
+        'nuc_vc': {
+            61, 62, 63, 64, 65, 66, 67, 68, 69, 70
+        },
         'core_one': {
             4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 24, 25, 26, 27, 28,
             29, 30, 31, 32, 33, 34, 45, 46, 47, 48, 49, 50, 51
         },
         'core_two': {52, 53, 54, 55, 56, 57, 58, 59},
-        'unknown': {71, 72},
         'auto_pass': {
             4, 6, 7, 8, 11, 13, 15, 24, 25, 26, 27, 32, 33, 34, 45, 46, 47, 48,
             49, 50, 51, 57, 58, 59
         },
-        'auto_fail': {
-            5, 9, 10, 12, 14, 52, 53, 54, 23, 55, 56, 28, 29, 30, 31
-        },
+        'auto_fail': {5, 9, 10, 12, 14, 52, 53, 54, 23, 55, 56, 28, 29, 30, 31},
         'no_auto_qc': {
             0, 1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 35, 36, 37, 38, 39, 40, 41,
-            42, 43, 44, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
-        }
+            42, 43, 44, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+        },
+        'unknown': {71,72}
     }
 
     model.sweep_types = sweep_types
@@ -144,39 +159,37 @@ def test_filter_sweeps(qtbot, filter_status):
 
     view.setModel(model)
 
-    # setting filter checkboxes to initial values on data set loaded
-    view.view_pipeline.setChecked(True)
-    view.view_nuc_vc.setChecked(False)
-
     # changing status to what user would select
-    view.view_pipeline.setChecked(filter_status[0])
-    view.view_nuc_vc.setChecked(filter_status[1])
+    view.view_all_sweeps.setChecked(filter_status[0])
+    view.view_pipeline.setChecked(filter_status[1])
+    view.view_nuc_vc.setChecked(filter_status[2])
 
-    if filter_status[0] and filter_status[1]:
-        for index in range(num_rows):
-            if index in sweep_types['pipeline'].union(sweep_types['nuc_vc']
-            ):
-                assert view.isRowHidden(index) is False
-            else:
-                assert view.isRowHidden(index) is True
+    view.filter_sweeps()
 
-    elif filter_status[0]:
-        for index in range(num_rows):
-            if index in sweep_types['pipeline']:
-                assert view.isRowHidden(index) is False
-            else:
-                assert view.isRowHidden(index) is True
+    # check sweeps are filtered as expected
+    visible_sweeps = set()  # empty set of visible sweeps
 
-    elif filter_status[1]:
-        for index in range(num_rows):
-            if index in sweep_types['nuc_vc']:
-                assert view.isRowHidden(index) is False
-            else:
-                assert view.isRowHidden(index) is True
+    if filter_status[0]:
+        visible_sweeps.update(sweep_types['all_sweeps'])
+    # pipeline sweeps
+    if filter_status[1]:
+        visible_sweeps.update(sweep_types['pipeline'])
+    # channel recording sweeps
+    if filter_status[2]:
+        visible_sweeps.update(sweep_types['nuc_vc'])
 
-    else:
-        for index in range(num_rows):
-            if index not in sweep_types['search']:
-                assert view.isRowHidden(index) is False
-            else:
-                assert view.isRowHidden(index) is True
+    # check if boxes are updated as appropriate
+    if sweep_types['pipeline'].issubset(visible_sweeps):
+        assert view.view_pipeline.isChecked()
+    if sweep_types['nuc_vc'].issubset(visible_sweeps):
+        assert view.view_nuc_vc.isChecked()
+
+    # remove 'Search' sweeps from visible sweeps
+    visible_sweeps = visible_sweeps - sweep_types['search']
+
+    # loop through rows and confirm visible sweeps
+    for index in range(num_rows):
+        if index in visible_sweeps:
+            assert not view.isRowHidden(index)
+        else:
+            assert view.isRowHidden(index)
