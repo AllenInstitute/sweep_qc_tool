@@ -49,15 +49,15 @@ class FxData(QObject):
                                    nwb_file=self.input_nwb_file,
                                    ontology=self.ontology)
         try:
-            cell_features, sweep_features, cell_record, sweep_records = extract_data_set_features(data_set)
-
-            cell_state = {"failed_fx": False, "fail_fx_message": None}
+            cell_features, sweep_features, cell_record, sweep_records,\
+                cell_state, feature_states = extract_data_set_features(data_set)
 
             self.feature_data = {'cell_features': cell_features,
                                  'sweep_features': sweep_features,
                                  'cell_record': cell_record,
                                  'sweep_records': sweep_records,
-                                 'cell_state': cell_state
+                                 'cell_state': cell_state,
+                                 'feature_states': feature_states
                                 }
 
             self.new_state()
