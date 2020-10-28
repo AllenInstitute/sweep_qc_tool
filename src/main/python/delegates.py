@@ -1,15 +1,11 @@
 from PyQt5.QtWidgets import (
-    QWidget,
     QStyledItemDelegate, QItemDelegate,
     QStyleOptionViewItem, QApplication, QStyle, QStyleOptionComboBox,
     QComboBox
 )
-from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
-from PyQt5.QtGui import QStandardItemModel, QPainter
-from PyQt5.QtCore import (
-    QModelIndex, QByteArray,
-    QRectF, QPoint
-)
+from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtGui import QPainter
+from PyQt5.QtCore import QModelIndex, QRectF
 from PyQt5 import QtCore
 
 

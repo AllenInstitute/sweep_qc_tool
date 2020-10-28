@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget
+from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget, QAction
 from PyQt5.QtCore import QModelIndex
 
 from delegates import SvgDelegate, ComboBoxDelegate
@@ -41,6 +41,42 @@ class SweepTableView(QTableView):
 
         self.setWordWrap(True)
 
+        # sweep view filter actions
+        self.view_all_sweeps = QAction("All sweeps")
+        # current / voltage clamp
+        self.view_v_clamp = QAction("Voltage clamp")
+        self.view_i_clamp = QAction("Current clamp")
+        # stimulus codes
+        self.view_pipeline = QAction("QC Pipeline")
+        self.view_ex_tp = QAction("EXTP - Test sweeps")
+        self.view_nuc_vc = QAction("NucVC - Channel recordings")
+        self.view_core_one = QAction("Core 1")
+        self.view_core_two = QAction("Core 2")
+        # qc status
+        self.view_auto_pass = QAction("Auto passed")
+        self.view_auto_fail = QAction("Auto failed")
+        self.view_no_auto_qc = QAction("No auto QC")
+        # initialize these actions
+        self.init_actions()
+
+    def init_actions(self):
+        """ Initializes menu actions which are responsible for filtering sweeps
+        """
+        # initialize view all sweeps action
+        self.view_all_sweeps.setCheckable(True)
+        self.view_all_sweeps.triggered.connect(self.filter_sweeps)
+        self.view_all_sweeps.setEnabled(False)
+
+        # initialize filter down to auto qc action
+        self.view_pipeline.setCheckable(True)
+        self.view_pipeline.triggered.connect(self.filter_sweeps)
+        self.view_pipeline.setEnabled(False)
+
+        # initialize filter down to channel sweeps action
+        self.view_nuc_vc.setCheckable(True)
+        self.view_nuc_vc.triggered.connect(self.filter_sweeps)
+        self.view_nuc_vc.setEnabled(False)
+
     def get_column_index(self, name: str) -> Optional[int]:
         return self._colname_idx_map.get(name, None)
     
@@ -75,7 +111,8 @@ class SweepTableView(QTableView):
 
         Parameters
         ----------
-        all are ignored. They are present because this method is triggered by a data-carrying signal.
+        All are ignored. They are present because this method is triggered
+        by a data-carrying signal.
 
         """
 
@@ -100,12 +137,8 @@ class SweepTableView(QTableView):
         if not index.column() in {test_column, exp_column}:
             return
 
-        index_rect = self.visualRect(index)
-        self.popup_plot(
-            self.model().data(index).full(),
-            index_rect.left(),
-            index_rect.top()
-        )
+        # display popup plot at (100, 100) for user convenience
+        self.popup_plot(self.model().data(index).full(), left=100, top=100)
 
     def popup_plot(self, graph: QWidget, left: int = 0, top: int = 0):
         """ Make a popup with a single widget, which ought to be a plotter for 
@@ -126,3 +159,46 @@ class SweepTableView(QTableView):
         popup.setLayout(layout)
         popup.move(left, top)
         popup.exec()
+
+    def filter_sweeps(self):
+        """ Filters the table down to sweeps based on the checkboxes that are
+        check in the view menu. If 'Auto QC sweeps' is checked then it will
+        only show sweeps that have gone through the auto QC pipeline. If
+        'Channel recording sweeps' is checked then it will only show channel
+        recording sweeps with the 'NucVC' prefix. If both are checked then
+        it will only show auto QC pipeline sweeps and channe
+        l recording sweeps.
+        If neither are checked it will show everything except 'Search' sweeps.
+
+        """
+        # temporary variable of visible sweeps
+        visible_sweeps = set()
+        # add checked view options to set of visible sweeps
+        # all sweeps
+        if self.view_all_sweeps.isChecked():
+            visible_sweeps.update(self.model().sweep_types['all_sweeps'])
+        # pipeline sweeps
+        if self.view_pipeline.isChecked():
+            visible_sweeps.update(self.model().sweep_types['pipeline'])
+        # channel recording sweeps
+        if self.view_nuc_vc.isChecked():
+            visible_sweeps.update(self.model().sweep_types['nuc_vc'])
+
+        # set view pipeline to checked if it is a subset of visible sweeps
+        self.view_pipeline.setChecked(
+            self.model().sweep_types['pipeline'].issubset(visible_sweeps)
+        )
+        # set view nuc vc to checked if it is a subset of visible sweeps
+        self.view_nuc_vc.setChecked(
+            self.model().sweep_types['nuc_vc'].issubset(visible_sweeps)
+        )
+
+        # remove 'Search' sweeps from visible sweeps
+        visible_sweeps = visible_sweeps - self.model().sweep_types['search']
+
+        # loop through rows of table model and show only visible sweeps
+        for index in range(self.model().rowCount()):
+            if index in visible_sweeps:
+                self.showRow(index)
+            else:
+                self.hideRow(index)

@@ -1,10 +1,6 @@
-import pytest
 import pytest_check as check
 
-from PyQt5.QtWidgets import QComboBox, QApplication, QMainWindow
-from PyQt5.QtCore import Qt
-
-import numpy as np
+from PyQt5.QtWidgets import QApplication, QMainWindow
 
 from delegates import ComboBoxDelegate
 

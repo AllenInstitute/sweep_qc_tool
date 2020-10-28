@@ -43,14 +43,14 @@ def test_on_new_data(page):
     check.equal(page.central_layout.count(), 3)
     # need to indirect through intermediate category widget, cell feature, to 
     # finally get to the value Qlabel
-    check.equal(page.central_layout
+    check.equal(
+        page.central_layout
         .itemAt(2).widget()
         .layout().itemAt(0).widget()
         .layout().itemAt(2).widget()
         .text(),
         "None"
     )
-
 
 
 @pytest.mark.parametrize("inpt,expct", [
@@ -62,6 +62,7 @@ def test_on_new_data(page):
 def test_format_feature(inpt, expct):
     obtained = format_feature(inpt)
     assert obtained == expct
+
 
 @pytest.mark.parametrize("data,path,expct", [
     [{"a": {"b": 2}}, ["a", "b"], "2"]

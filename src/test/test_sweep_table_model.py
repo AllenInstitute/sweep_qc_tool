@@ -1,7 +1,6 @@
 import pytest
 
-from PyQt5.QtCore import QModelIndex, Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 
 from sweep_table_model import SweepTableModel, SweepPlotConfig
 

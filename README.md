@@ -48,4 +48,4 @@ When you run feature extraction, cell-level features are calculated using the se
 
 level of support
 ----------------
-We are actively using and maintaing this code. We welcome issues (particularly bug reports) and pull requests from the community, but cannot promise to address them on any fixed schedule.
+We are actively using and maintaining this code. We welcome issues (particularly bug reports) and pull requests from the community, but cannot promise to address them on any fixed schedule.

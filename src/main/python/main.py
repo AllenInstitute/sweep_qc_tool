@@ -22,6 +22,35 @@ from fx_data import FxData
 from pre_fx_controller import PreFxController
 from cell_feature_page import CellFeaturePage
 
+""" Sweep QC Tool
+---------------------
+This program can load one of the Allen Institute's electrophysiology data sets
+stored in the .nwb file format. The program then displays the ephys sweeps that
+were recorded during the experiment, which the user can then use to perform 
+manual QC. Once the user is done performing manual QC they can then save the QC
+states in a .json file. Currently only data from the Institute's In Vitro 
+Single Cell Characterization (IVSCC) pipeline is supported.
+
+How to make your own sweep filters
+----------------------------------
+
+1. In sweep_table_view.py, add a QAction to `SweepTableView.__init__()`
+
+2. In the init_actions() method of SweepTableView, 
+set the menu action as checkable with .setCheckable(True), 
+connect the action with .toggled.connect(self.filter_sweeps), 
+and set the action as disabled initially with .setEnabled(False)
+
+3. In the .filter_sweeps() method of `SweepTableView`, add appropriate checkbox logic
+
+4. In main.py, set the initial status of the checkbox in SweepPage.set_default_filter_states()
+with .setEnabled(True) and .setChecked(True) or .setChecked(False)
+
+5. Also in `main.py`, add the action to the menu in MainWindow.add_menu_actions()
+
+"""
+
+
 class SweepPage(QWidget):
 
     colnames: tuple = (
@@ -37,19 +66,22 @@ class SweepPage(QWidget):
 
     def __init__(self, sweep_plot_config: SweepPlotConfig):
         """ Holds and displays a table view (and associated model) containing 
-        information about individual sweeps. 
+        information about individual sweeps.
+
         """
 
         super().__init__()
-
-        self.sweep_view = SweepTableView(self.colnames)
+        # abstract model of the sweep table that is represented by sweep_view
         self.sweep_model = SweepTableModel(self.colnames, sweep_plot_config)
 
+        # view of the sweep table that the user sees
+        self.sweep_view = SweepTableView(self.colnames)
         self.sweep_view.setModel(self.sweep_model)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.sweep_view)
-        self.setLayout(layout)
+        # page layout
+        vbox_layout = QVBoxLayout()
+        vbox_layout.addWidget(self.sweep_view)
+        self.setLayout(vbox_layout)
 
         self.sweep_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.sweep_view.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -63,8 +95,42 @@ class SweepPage(QWidget):
             Will be used as the underlying data store (via this object's model).
 
         """
+        # connect model to default checkbox states for view menu
+        self.sweep_model.new_data.connect(self.set_default_filter_states)
 
+        # connect model to raw data
         self.sweep_model.connect(data)
+
+    def set_default_filter_states(self):
+        """ Sets the default checkbox states when a new data set is loaded """
+
+        # initialize set of all sweeps
+        # self.sweep_view.all_sweeps = set(range(self.sweep_model.rowCount()))
+
+        # enable checkboxes when data is loaded
+        self.sweep_view.view_all_sweeps.setEnabled(True)
+
+        # set default check states
+        self.sweep_view.view_nuc_vc.setChecked(False)
+
+        # check if sweeps of certain types exist and enable appropriate actions
+        if self.sweep_model.sweep_types['pipeline']:
+            self.sweep_view.view_pipeline.setEnabled(True)
+            self.sweep_view.view_pipeline.setChecked(True)
+            # set all sweeps unchecked if pipeline sweep exist
+            self.sweep_view.view_all_sweeps.setChecked(False)
+        else:
+            self.sweep_view.view_pipeline.setEnabled(False)
+            # set all sweeps checked if no pipeline sweeps
+            self.sweep_view.view_all_sweeps.setChecked(True)
+
+        if self.sweep_model.sweep_types['nuc_vc']:
+            self.sweep_view.view_nuc_vc.setEnabled(True)
+        else:
+            self.sweep_view.view_nuc_vc.setEnabled(False)
+
+        # trigger view pipeline sweeps
+        self.sweep_view.filter_sweeps()
 
 
 class PlotPage(QWidget):
@@ -91,12 +157,19 @@ class MainWindow(QMainWindow):
 
         # Configure window
         self.setWindowTitle("Ephys Sweep QC Tool")
-        self.resize(800, 1000)
+        self.resize(1000, 1000)
 
         # Create tab widget & set tabs as a central widget
         tab_widget = QTabWidget()
         self.setCentralWidget(tab_widget)
 
+        # initialize main menu bar
+        self.main_menu_bar = self.menuBar()
+        self.file_menu = self.main_menu_bar.addMenu("File")
+        self.edit_menu = self.main_menu_bar.addMenu("Edit")
+        self.settings_menu = self.main_menu_bar.addMenu("Settings")
+        self.view_menu = self.main_menu_bar.addMenu("View")
+        self.main_menu_bar.addMenu("Help")
 
     def insert_tabs(
         self, 
@@ -121,22 +194,21 @@ class MainWindow(QMainWindow):
         self.centralWidget().insertTab(1, feature_page, "Features")
         self.centralWidget().insertTab(2, plot_page, "Plots")
 
-    def create_main_menu_bar(self, pre_fx_controller: PreFxController):
+    def add_menu_actions(
+            self, pre_fx_controller: PreFxController, sweep_page: SweepPage
+    ):
         """ Set up the main application menu.
 
         Parameters
         ----------
-        pre_fx_controller : 
+        pre_fx_controller : PreFxController
             Owns QActions for loading nwb data, stimulus ontologies, and qc criteria
+        sweep_page : SweepPage
+            Owns QActions for filtering the sweeps viewed on the sweep page
 
         """
 
-        self.main_menu_bar = self.menuBar()
-        self.file_menu = self.main_menu_bar.addMenu("File")
-        self.edit_menu = self.main_menu_bar.addMenu("Edit")
-        self.settings_menu = self.main_menu_bar.addMenu("Settings")
-        self.main_menu_bar.addMenu("Help")
-
+        # add file menu actions
         self.file_menu.addAction(
             pre_fx_controller.load_data_set_action
         )
@@ -153,11 +225,17 @@ class MainWindow(QMainWindow):
             pre_fx_controller.load_qc_criteria_action
         )
 
+        # add settings menu actions
         self.settings_menu.addAction(pre_fx_controller.show_stimulus_ontology_action)
         self.settings_menu.addAction(pre_fx_controller.show_qc_criteria_action)
 
+        # add edit menu actions
         self.edit_menu.addAction(pre_fx_controller.run_feature_extraction_action)
 
+        # add view menu actions
+        self.view_menu.addAction(sweep_page.sweep_view.view_all_sweeps)
+        self.view_menu.addAction(sweep_page.sweep_view.view_pipeline)
+        self.view_menu.addAction(sweep_page.sweep_view.view_nuc_vc)
 
     def setup_status_bar(self, pre_fx_data: PreFxData, fx_data: FxData):
         """ Sets up a status bar, which reports the current state of the app. 
@@ -178,6 +256,7 @@ class MainWindow(QMainWindow):
         fx_data.status_message.connect(status_bar.repaint)
         fx_data.state_outdated.connect(fx_status.show)
         fx_data.new_state_set.connect(fx_status.hide)
+
 
 class Application(object):
 
@@ -216,19 +295,25 @@ class Application(object):
         self.feature_page = CellFeaturePage()
         self.plot_page = PlotPage()
         self.status_bar = self.main_window.statusBar()
+
         # set cmdline params
         self.pre_fx_controller.set_output_path(output_dir)
-        
+
         # connect components
+        # connect controller to raw data and feature extractor
         self.pre_fx_controller.connect(self.pre_fx_data, self.fx_data)
+        # connect sweep page to raw data
         self.sweep_page.connect(self.pre_fx_data)
+        # connect main window to various components
         self.main_window.insert_tabs(self.sweep_page, self.feature_page, self.plot_page)
-        self.main_window.create_main_menu_bar(self.pre_fx_controller)
+        self.main_window.add_menu_actions(self.pre_fx_controller, self.sweep_page)
+        # connect feature extractor to raw data
         self.fx_data.connect(self.pre_fx_data)
+        # connect feature page to feature extractor
         self.feature_page.connect(self.fx_data)
 
+        # initialize status bar
         self.main_window.setup_status_bar(self.pre_fx_data, self.fx_data)
-
         # initialize default data
         self.pre_fx_data.set_default_stimulus_ontology()
         self.pre_fx_data.set_default_qc_criteria()
@@ -240,7 +325,6 @@ class Application(object):
             self.pre_fx_controller.selected_qc_criteria_path.emit(initial_qc_criteria_path)
         if initial_nwb_path is not None:
             self.pre_fx_controller.selected_data_set_path.emit(initial_nwb_path)
-
 
     def run(self):
         self.main_window.show()
@@ -291,7 +375,3 @@ if __name__ == '__main__':
 
     exit_code = app.run()
     sys.exit(exit_code)
-
-
-
-

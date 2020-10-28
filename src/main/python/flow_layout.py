@@ -41,7 +41,6 @@ class FlowLayout(QLayout):
 
         self.setContentsMargins(margin, margin, margin, margin)
 
-
     def horizontalSpacing(self):
         return self.horizontal_spacing
 
