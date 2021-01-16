@@ -2,9 +2,11 @@ import json
 import logging
 import copy
 from typing import Optional, List, Dict, Any
-import ipfx
-from PyQt5.QtCore import QObject, pyqtSignal
+from multiprocessing import Pipe, Process
+from pathlib import Path
 
+from PyQt5.QtCore import QObject, pyqtSignal
+from ipfx import __version__
 from ipfx.ephys_data_set import EphysDataSet
 from ipfx.qc_feature_extractor import cell_qc_features, sweep_qc_features
 from ipfx.qc_feature_evaluator import qc_experiment, DEFAULT_QC_CRITERIA_FILE
@@ -14,7 +16,9 @@ from ipfx.dataset.create import create_ephys_data_set
 from ipfx.sweep_props import drop_tagged_sweeps
 from error_handling import exception_message
 from marshmallow import ValidationError
+
 from schemas import PipelineParameters
+from sweep_plotter import make_plots, SweepPlotConfig
 
 
 class PreFxData(QObject):
@@ -26,13 +30,14 @@ class PreFxData(QObject):
     qc_criteria_unset = pyqtSignal(name="qc_criteria_unset")
 
     begin_commit_calculated = pyqtSignal(name="begin_commit_calculated")
-    end_commit_calculated = pyqtSignal(list, list, dict, EphysDataSet, name="end_commit_calculated")
+    end_commit_calculated = pyqtSignal(list, list, dict, dict, name="end_commit_calculated")
 
     data_changed = pyqtSignal(str, StimulusOntology, list, dict, name="data_changed")
+    update_specimen_name = pyqtSignal(str, name="update_specimen_name")
 
     status_message = pyqtSignal(str, name="status_message")
 
-    def __init__(self):
+    def __init__(self, plot_config: SweepPlotConfig):
         """ Main data store for all data upstream of feature extraction. This
         includes:
             - the EphysDataSet
@@ -40,8 +45,14 @@ class PreFxData(QObject):
             - the qc criteria
             - the sweep extraction results
             - the qc results
+
+        Parameters
+        ----------
+        plot_config : SweepPlotConfig
+            named tuple with constants used for plotting sweeps
         """
         super(PreFxData, self).__init__()
+        self.plot_config = plot_config
 
         # Nwb related data
         self.data_set: Optional[EphysDataSet] = None
@@ -254,7 +265,7 @@ class PreFxData(QObject):
             "stimulus_ontology_file": self.ontology_file,
             "manual_sweep_states": self.extract_manual_sweep_states(),
             "qc_criteria": self._qc_criteria,
-            "ipfx_version": ipfx.__version__
+            "ipfx_version": __version__
         }
 
         try:
@@ -302,6 +313,11 @@ class PreFxData(QObject):
             ontology=stimulus_ontology
         )
 
+        # Spawns process and pipe for making sweep plots
+        plot_process, plot_pipe = self.spawn_plot_process(data_set)
+        # Run this in parallel to auto QC steps below
+        plot_process.start()
+
         data_set.sweep_table.sort_values(by='sweep_number', axis=0, inplace=True)
 
         self.status_message.emit("Performing auto QC...")
@@ -309,13 +325,14 @@ class PreFxData(QObject):
         # cell_tags: QC details about the cell (e.g. 'Blowout is not available'
         # sweep_features: list of dictionaries containing qc information for
         #   sweeps that that have gone through auto qc
-        cell_features, cell_tags, pre_qc_sweep_features = extract_qc_features(data_set)
+        cell_features, cell_tags, pre_qc_sweep_features = \
+            self.extract_qc_features(data_set)
 
         # sweep_states: list of dictionaries containing sweep pass/fail states
         # cell_state: dictionary of qc states for the cell related to cell_features
-        cell_state, cell_features, sweep_states, post_qc_sweep_features = run_qc(
-            stimulus_ontology, cell_features, pre_qc_sweep_features, qc_criteria
-        )
+        cell_state, cell_features, sweep_states, post_qc_sweep_features = \
+            self.run_qc(stimulus_ontology, cell_features,
+                        pre_qc_sweep_features, qc_criteria)
 
         if commit:
             self.status_message.emit("Gathering QC information...")
@@ -324,6 +341,8 @@ class PreFxData(QObject):
             self.stimulus_ontology = stimulus_ontology
             self.qc_criteria = qc_criteria
             self.nwb_path = nwb_path
+            # send specimen name to main window to update window title
+            self.update_specimen_name.emit(Path(nwb_path).stem)
 
             self.data_set = data_set
             self.cell_features = cell_features
@@ -343,18 +362,55 @@ class PreFxData(QObject):
                 sweep['sweep_number']: "default" for sweep in self.sweep_states
             }
 
+            # Receive thumbnail / popup plot pairs here
+            self.status_message.emit("Plotting sweeps...")
+            plot_pipe[1].close()
+            sweep_plots = plot_pipe[0].recv()
+
             self.status_message.emit("Initializing sweep page...")
             # emits signal that tells sweep_table_model to populate itself
             # with new data
             self.end_commit_calculated.emit(
-                self.sweep_features, self.sweep_states, self.manual_qc_states, self.data_set
+                self.sweep_features, self.sweep_states, self.manual_qc_states,
+                sweep_plots
             )
 
+        # join could possibly go in the 'if commit:' block so we can cancel load
+        plot_process.join()
+        plot_process.terminate()
         # notifies fx_data that data has changed
         self.data_changed.emit(self.nwb_path,
                                self.stimulus_ontology,
                                self.sweep_features,
                                self.cell_features)
+
+    def spawn_plot_process(self, data_set: EphysDataSet) -> Pipe:
+        """Generates a list of sweeps to plot then spawns a plotting process.
+
+        """
+        self.status_message.emit("Extracting sweep data...")
+        # generator for stimulus codes to determine ones to plot
+        stim_code_gen = (
+            data_set.get_stimulus_code(idx)
+            for idx in data_set._data.sweep_numbers  # this property is fastest
+        )
+
+        # skip over "Search" sweeps because we don't need to plot them
+        sweep_dictionary = {
+            idx: {'sweep': data_set.sweep(idx), 'stimulus_code': stim_code}
+            for idx, stim_code in enumerate(stim_code_gen)
+            if "Search" not in stim_code  # these will not be plotted for speed
+        }
+
+        # This pipe will send sweep data and receive thumbnails / popup plots
+        plot_pipe = Pipe(duplex=False)
+        plot_process = Process(
+            name="plot_process", target=make_plots,
+            args=(sweep_dictionary, self.plot_config, plot_pipe[1])
+        )
+        plot_process.daemon = True
+
+        return plot_process, plot_pipe
 
     def populate_qc_info(
         self,
@@ -487,82 +543,82 @@ class PreFxData(QObject):
                                self.sweep_features,
                                self.cell_features)
 
+    @staticmethod
+    def extract_qc_features(data_set):
+        """ Extracts QC information for the cell and the sweeps using ipfx.
 
-def extract_qc_features(data_set):
-    """ Extracts QC information for the cell and the sweeps using ipfx.
+        Parameters
+        ----------
+        data_set : EphysDataSet
+            raw data used in qc feature extraction
 
-    Parameters
-    ----------
-    data_set : EphysDataSet
-        raw data used in qc feature extraction
+        Returns
+        -------
+        cell_features : dict
+            dictionary of qc info for the cell (overall experiment level info)
+        cell_tags : list
+            a list of qc tags for the cell (e.g. 'Blowout is not available')
+        sweep_features : list[dict]
+            a list of dictionaries containing qc info for each individual sweep
 
-    Returns
-    -------
-    cell_features : dict
-        dictionary of qc info for the cell (overall experiment level info)
-    cell_tags : list
-        a list of qc tags for the cell (e.g. 'Blowout is not available')
-    sweep_features : list[dict]
-        a list of dictionaries containing qc info for each individual sweep
+        """
+        cell_features, cell_tags = cell_qc_features(data_set)
+        sweep_features = sweep_qc_features(data_set)
+        return cell_features, cell_tags, sweep_features
 
-    """
-    cell_features, cell_tags = cell_qc_features(data_set)
-    sweep_features = sweep_qc_features(data_set)
-    return cell_features, cell_tags, sweep_features
+    @staticmethod
+    def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
+        """Adds qc status to sweep features and outputs a qc summary to the log.
 
+        Parameters
+        ----------
+        stimulus_ontology : StimulusOntology
+            stimulus ontology used for this data set
+        cell_features : dict
+            dictionary of qc info for the cell (overall experiment level info)
+        sweep_features : list[dict]
+            a list of dictionaries containing qc info for each individual sweep
+        qc_criteria : dict
+            a dictionary containing the criteria used for auto QC
 
-def run_qc(stimulus_ontology, cell_features, sweep_features, qc_criteria):
-    """Adds qc status to sweep features and outputs a qc summary to the log.
+        Returns
+        -------
+        cell_state : dict
+            a dictionary of qc states for various cell level qc criteria
+        cell_features : dict
+            dictionary of qc info for the cell (overall experiment level info)
+        sweep_states : List[dict]
+            a list of dictionaries containing auto QC states
+        post_qc_sweep_features : List[dict]
+            similar to sweep_features input, but with rows removed for most sweeps
+            that failed auto QC and new column containing the auto QC states
 
-    Parameters
-    ----------
-    stimulus_ontology : StimulusOntology
-        stimulus ontology used for this data set
-    cell_features : dict
-        dictionary of qc info for the cell (overall experiment level info)
-    sweep_features : list[dict]
-        a list of dictionaries containing qc info for each individual sweep
-    qc_criteria : dict
-        a dictionary containing the criteria used for auto QC
+        """
 
-    Returns
-    -------
-    cell_state : dict
-        a dictionary of qc states for various cell level qc criteria
-    cell_features : dict
-        dictionary of qc info for the cell (overall experiment level info)
-    sweep_states : List[dict]
-        a list of dictionaries containing auto QC states
-    post_qc_sweep_features : List[dict]
-        similar to sweep_features input, but with rows removed for most sweeps
-        that failed auto QC and new column containing the auto QC states
+        # making a copy of sweep_features so we don't lose the info from the first
+        # round of auto QC
+        post_qc_sweep_features = copy.deepcopy(sweep_features)
+        cell_features = copy.deepcopy(cell_features)
 
-    """
+        # tagged sweeps are dropped here so that qc_experiment() doesn't break due
+        # to trying to handle sweeps that were terminated early
+        drop_tagged_sweeps(post_qc_sweep_features)
 
-    # making a copy of sweep_features so we don't lose the info from the first
-    # round of auto QC
-    post_qc_sweep_features = copy.deepcopy(sweep_features)
-    cell_features = copy.deepcopy(cell_features)
+        # extracts auto QC states for the cell and for sweeps passing the first
+        # round of auto QC
+        cell_state, sweep_states = qc_experiment(
+            ontology=stimulus_ontology,
+            cell_features=cell_features,
+            sweep_features=post_qc_sweep_features,
+            qc_criteria=qc_criteria
+        )
 
-    # tagged sweeps are dropped here so that qc_experiment() doesn't break due
-    # to trying to handle sweeps that were terminated early
-    drop_tagged_sweeps(post_qc_sweep_features)
+        # outputs a summary of the auto QC results to the log
+        qc_summary(
+            sweep_features=post_qc_sweep_features,
+            sweep_states=sweep_states,
+            cell_features=cell_features,
+            cell_state=cell_state
+        )
 
-    # extracts auto QC states for the cell and for sweeps passing the first
-    # round of auto QC
-    cell_state, sweep_states = qc_experiment(
-        ontology=stimulus_ontology,
-        cell_features=cell_features,
-        sweep_features=post_qc_sweep_features,
-        qc_criteria=qc_criteria
-    )
-
-    # outputs a summary of the auto QC results to the log
-    qc_summary(
-        sweep_features=post_qc_sweep_features,
-        sweep_states=sweep_states, 
-        cell_features=cell_features,
-        cell_state=cell_state
-    )
-
-    return cell_state, cell_features, sweep_states, post_qc_sweep_features
+        return cell_state, cell_features, sweep_states, post_qc_sweep_features

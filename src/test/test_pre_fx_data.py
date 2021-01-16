@@ -1,6 +1,6 @@
 from pre_fx_data import PreFxData
 
-from .test_sweep_plots import MockDataSet
+from .test_sweep_plots import MockDataSet, mock_config
 
 
 MOCK_PRE_QC_FEATURES = [
@@ -24,7 +24,7 @@ MOCK_STATES = [
 
 
 def test_populate_qc_info():
-    pre_fx_data = PreFxData()
+    pre_fx_data = PreFxData(mock_config)
     pre_fx_data.data_set = MockDataSet()
 
     pre_fx_data.populate_qc_info(

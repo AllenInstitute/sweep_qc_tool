@@ -2,13 +2,12 @@ import pytest
 
 from PyQt5.QtCore import Qt
 
-from sweep_table_model import SweepTableModel, SweepPlotConfig
+from sweep_table_model import SweepTableModel
 
 @pytest.fixture
 def model():
     return SweepTableModel(
         ["a", "b", "c"],
-        SweepPlotConfig(1, 2, 3, 4, 5, 6, 7)
     )
 
 

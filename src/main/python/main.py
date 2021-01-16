@@ -64,7 +64,7 @@ class SweepPage(QWidget):
         "experiment epoch"
     )
 
-    def __init__(self, sweep_plot_config: SweepPlotConfig):
+    def __init__(self):
         """ Holds and displays a table view (and associated model) containing 
         information about individual sweeps.
 
@@ -72,7 +72,7 @@ class SweepPage(QWidget):
 
         super().__init__()
         # abstract model of the sweep table that is represented by sweep_view
-        self.sweep_model = SweepTableModel(self.colnames, sweep_plot_config)
+        self.sweep_model = SweepTableModel(self.colnames)
 
         # view of the sweep table that the user sees
         self.sweep_view = SweepTableView(self.colnames)
@@ -171,6 +171,15 @@ class MainWindow(QMainWindow):
         self.view_menu = self.main_menu_bar.addMenu("View")
         self.main_menu_bar.addMenu("Help")
 
+    def update_window_title(self, specimen_name: str):
+        """ Update window title to display current specimen (cell) name.
+        Parameters
+        ----------
+        specimen_name : str
+            string representing specimen to display in main window title
+        """
+        self.setWindowTitle(f"{specimen_name} - Ephys Sweep QC Tool")
+
     def insert_tabs(
         self, 
         sweep_page: SweepPage, 
@@ -251,6 +260,8 @@ class MainWindow(QMainWindow):
 
         pre_fx_data.status_message.connect(status_bar.showMessage)
         pre_fx_data.status_message.connect(status_bar.repaint)
+        # connect signal to update window title with new specimen name
+        pre_fx_data.update_specimen_name.connect(self.update_window_title)
 
         fx_data.status_message.connect(status_bar.showMessage)
         fx_data.status_message.connect(status_bar.repaint)
@@ -289,9 +300,9 @@ class Application(object):
         # initialize components
         self.main_window = MainWindow()
         self.pre_fx_controller: PreFxController = PreFxController()
-        self.pre_fx_data: PreFxData = PreFxData()
+        self.pre_fx_data: PreFxData = PreFxData(plot_config=sweep_plot_config)
         self.fx_data: FxData = FxData()
-        self.sweep_page = SweepPage(sweep_plot_config)
+        self.sweep_page = SweepPage()
         self.feature_page = CellFeaturePage()
         self.plot_page = PlotPage()
         self.status_bar = self.main_window.statusBar()

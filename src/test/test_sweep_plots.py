@@ -6,8 +6,8 @@ import numpy as np
 from pyqtgraph import InfiniteLine
 
 from sweep_plotter import (
-    test_response_plot_data, experiment_plot_data, SweepPlotConfig,
-    PulsePopupPlotter, ExperimentPopupPlotter, PlotData, SweepPlotter
+    SweepPlotConfig, PulsePopupPlotter, ExperimentPopupPlotter,
+    PlotData, SweepPlotter
 )
 
 from .conftest import check_allclose
@@ -70,67 +70,70 @@ class MockSweep:
 
 class MockDataSet:
     """ A mock data set """
+
+    def __init__(self):
+        self._sweep_table = None
+
+    # noinspection PyTypeChecker
     @property
     def sweep_table(self):
-        return pd.DataFrame([
-            {'sweep_number': 0, 'stimulus_code': "foo"},
-            {'sweep_number': 1, 'stimulus_code': "fooSearch"},
-            {'sweep_number': 2, 'stimulus_code': "bar"},
-            {'sweep_number': 3, 'stimulus_code': "foobar"},
-            {'sweep_number': 4, 'stimulus_code': "bat"},
-            {'sweep_number': 5, 'stimulus_code': "fooRamp"},
-            {'sweep_number': 6, 'stimulus_code': "NucVCbat"},
-            {'sweep_number': 7, 'stimulus_code': "NucVCbiz"},
-            {'sweep_number': 8, 'stimulus_code': "NucVCfizz"}
+        if self._sweep_table is None:
+            self._sweep_table = pd.DataFrame([
+                {'sweep_number': 0, 'stimulus_code': "EXTPSMOKET_bar", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 1, 'stimulus_code': "EXTPINBATH_bar", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 2, 'stimulus_code': "EXTPCllATT_bar", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 3, 'stimulus_code': "EXTPBREAKN_bar", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 4, 'stimulus_code': "foo", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 5, 'stimulus_code': "foo", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 6, 'stimulus_code': "fooSearch", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 7, 'stimulus_code': "bar", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 8, 'stimulus_code': "foobar", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 9, 'stimulus_code': "bat", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 10, 'stimulus_code': "fooRamp", 'clamp_mode': "CurrentClamp"},
+                {'sweep_number': 11, 'stimulus_code': "EXTPGGAEND_bar", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 12, 'stimulus_code': "NucVCbat", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 13, 'stimulus_code': "NucVCbiz", 'clamp_mode': "VoltageClamp"},
+                {'sweep_number': 14, 'stimulus_code': "NucVCfizz", 'clamp_mode': "VoltageClamp"}
             ])
-
-    def sweep(self, sweep_number):
-        if sweep_number in range(0, 5):
-            return MockSweep(clamp_mode="CurrentClamp")
-        elif sweep_number in range(5, 9):
-            return MockSweep(clamp_mode="VoltageClamp")
-
-    def get_expected_stored_data(self):
-        # stored_data values: [initial_vclamp, previous_vclamp, initial_iclamp, previous_iclamp]
-        self._stored_data = [[None for _ in range(4)] for _ in range(len(self.sweep_table))]
-        initial_vclamp = None
-        previous_vclamp = None
-        initial_iclamp = None
-        previous_iclamp = None
-
-        for sweep_num, stim_code in enumerate(self.sweep_table['stimulus_code']):
-            self._stored_data[sweep_num] = [initial_vclamp, previous_vclamp,
-                                            initial_iclamp, previous_iclamp]
-
-            if self.sweep(sweep_num).clamp_mode == "CurrentClamp":
-                # don't store test pulse for 'Search' in current clamp
-                if self.sweep_table['stimulus_code'][sweep_num][-6:] != "Search":
-                    if initial_iclamp:
-                        previous_iclamp = True
-                    else:
-                        initial_iclamp = True
-
-            else:
-                # only store test pulse for 'NucVC' sweeps in voltage clamp
-                if self.sweep_table['stimulus_code'][sweep_num][0:5] == "NucVC":
-                    if initial_vclamp:
-                        previous_vclamp = True
-                    else:
-                        initial_vclamp = True
+            self._sweep_table.set_index('sweep_number')
+        return self._sweep_table
 
     @property
-    def stored_data(self):
-        return self._stored_data
+    def sweep_numbers(self):
+        return sorted(self.sweep_table['sweep_number'])
 
+    def get_stimulus_code(self, sweep_number):
+        return self.sweep_table.at[sweep_number, 'stimulus_code']
 
-mock_data_set = MockDataSet()
-mock_data_set.get_expected_stored_data()
-mock_plotter = SweepPlotter(data_set=mock_data_set, config=mock_config)
+    def get_clamp_mode(self, sweep_number):
+        return self.sweep_table.at[sweep_number, 'clamp_mode']
+
+    def sweep(self, sweep_number):
+        return MockSweep(clamp_mode=self.get_clamp_mode(sweep_number))
 
 
 @pytest.fixture
 def sweep():
     return MockSweep(clamp_mode="CurrentClamp")
+
+
+@pytest.fixture
+def mock_data_set():
+    return MockDataSet()
+
+
+@pytest.fixture
+def mock_plotter(mock_data_set):
+    stim_code_gen = (
+        mock_data_set.get_stimulus_code(idx)
+        for idx in mock_data_set.sweep_numbers  # this property is fastest
+    )
+    mock_sweep_dictionary = {
+        idx: {'sweep': mock_data_set.sweep(idx), 'stimulus_code': stim_code}
+        for idx, stim_code in enumerate(stim_code_gen)
+        if "Search" not in stim_code  # these will not be plotted for speed
+    }
+    return SweepPlotter(sweep_dictionary=mock_sweep_dictionary, config=mock_config)
 
 
 @pytest.mark.parametrize("start,end,baseline,expected", [
@@ -140,15 +143,15 @@ def sweep():
         response=[1.5, 2, 2.5, 3, 3.5, 4],
     )]
 ])
-def test_test_response_plot_data(sweep, start, end, baseline, expected):
+def test_test_response_plot_data(mock_plotter, sweep, start, end, baseline, expected):
 
-    obtained = test_response_plot_data(sweep, start, end, baseline)
+    obtained = mock_plotter.test_response_plot_data(sweep, start, end, baseline)
     check_allclose(expected[0], obtained[0])
     check_allclose(expected[1], obtained[1])
 
 
-def test_experiment_plot_data(sweep):
-    obt, obt_base = experiment_plot_data(
+def test_experiment_plot_data(mock_plotter, sweep):
+    obt, obt_base = mock_plotter.experiment_plot_data(
         sweep, baseline_start_index=0, baseline_end_index=2
     )
     obt_t = obt.time
@@ -160,20 +163,24 @@ def test_experiment_plot_data(sweep):
 
 
 @pytest.mark.parametrize(
-    "plot_data,previous_plot_data,initial_plot_data,sweep_number,y_label", [
+    "plot_data,previous_plot_data,initial_plot_data,sweep_number,y_label,stimulus_code", [
         [PlotData(time=np.arange(20), response=np.arange(20), stimulus=np.arange(20)),
-         None, None, 40, 'foo'],
+         None, None, 40, 'foo_label', 'foo_title'],
         [PlotData(time=np.arange(20), response=np.arange(20), stimulus=np.arange(20)),
          PlotData(time=np.arange(20), response=np.arange(20)*2, stimulus=np.arange(20)),
          PlotData(time=np.arange(20), response=np.arange(20)*3, stimulus=np.arange(20)),
-         40, 'foo']
+         40, 'foo_label', 'foo_title']
     ])
 def test_pulse_popup_plotter(
-        plot_data, previous_plot_data, initial_plot_data, sweep_number, y_label
+        plot_data, previous_plot_data, initial_plot_data,
+        sweep_number, y_label, stimulus_code
 ):
 
-    plotter = PulsePopupPlotter(plot_data, previous_plot_data,
-                                initial_plot_data, sweep_number, y_label)
+    plotter = PulsePopupPlotter(
+        plot_data, previous_plot_data, initial_plot_data,
+        sweep_number, y_label, stimulus_code
+    )
+
     graph = plotter()
 
     data_items = graph.getPlotItem().listDataItems()
@@ -190,13 +197,17 @@ def test_pulse_popup_plotter(
             check_allclose(item.yData, initial_plot_data.response)
 
 
-@pytest.mark.parametrize("plot_data,baseline,sweep_number,y_label", [
+@pytest.mark.parametrize("plot_data,baseline,sweep_number,y_label,stimulus_code", [
     [PlotData(time=np.linspace(0, np.pi, 20), response=np.arange(20), stimulus=np.arange(20)),
-     1.0, 40, 'foo']
+     1.0, 40, 'foo_label', 'foo_title']
 ])
-def test_experiment_popup_plotter_graph(plot_data, baseline, sweep_number, y_label):
+def test_experiment_popup_plotter_graph(
+        plot_data, baseline, sweep_number, y_label, stimulus_code
+):
 
-    plotter = ExperimentPopupPlotter(plot_data, baseline, sweep_number, y_label)
+    plotter = ExperimentPopupPlotter(
+        plot_data, baseline, sweep_number, y_label, stimulus_code
+    )
     graph = plotter()
 
     data_items = graph.getPlotItem().listDataItems()
@@ -214,38 +225,53 @@ def test_experiment_popup_plotter_graph(plot_data, baseline, sweep_number, y_lab
     check.equal(line.y(), baseline)
 
 
-# stored_data values: [initial_vclamp, previous_vclamp, initial_iclamp, previous_iclamp]
-@pytest.mark.parametrize(
-    "sweep_number", list(range(len(mock_data_set.sweep_table)))
-)
-def test_advance(sweep_number):
+def test_advance(mock_plotter, mock_data_set):
 
-    if mock_plotter.data_set.stored_data[sweep_number][0] is None:
-        assert mock_plotter.initial_vclamp_data is None
-    else:
-        assert mock_plotter.initial_vclamp_data is not None
+    expected_stored_tp = {
+        'initial_vclamp': None,
+        'previous_vclamp': None,
+        'initial_iclamp': None,
+        'previous_iclamp': None,
+    }
 
-    if mock_plotter.data_set.stored_data[sweep_number][1] is None:
-        assert mock_plotter.previous_vclamp_data is None
-    else:
-        assert mock_plotter.previous_vclamp_data is not None
+    for sweep_number in sorted(mock_plotter.sweep_dictionary.keys()):
+        # determine if test pulse should be stored based on stimulus code
+        stim_code = mock_data_set.get_stimulus_code(sweep_number)
+        clamp_mode = mock_data_set.get_clamp_mode(sweep_number)
 
-    if mock_plotter.data_set.stored_data[sweep_number][2] is None:
-        assert mock_plotter.initial_iclamp_data is None
-    else:
-        assert mock_plotter.initial_iclamp_data is not None
+        # only store the test pulse if it is not in the list of excluded stim codes
+        if not any(substring in stim_code for substring in mock_plotter.tp_exclude_codes):
+            # record sweep numbers of expected stored test pulses for I clamp
+            if clamp_mode == "CurrentClamp":
+                if expected_stored_tp['initial_iclamp'] is None:
+                    expected_stored_tp['initial_iclamp'] = sweep_number
+                else:
+                    expected_stored_tp['previous_iclamp'] = sweep_number
+            # record sweep numbers of expected stored test pulses for V clamp
+            else:
+                if expected_stored_tp['initial_vclamp'] is None:
+                    expected_stored_tp['initial_vclamp'] = sweep_number
+                else:
+                    expected_stored_tp['previous_vclamp'] = sweep_number
 
-    if mock_plotter.data_set.stored_data[sweep_number][3] is None:
-        assert mock_plotter.previous_iclamp_data is None
-    else:
-        assert mock_plotter.previous_iclamp_data is not None
+        mock_plotter.advance(sweep_number)
+        # verify test pulses are stored properly
+        if expected_stored_tp['initial_vclamp'] is None:
+            assert mock_plotter.initial_vclamp_data is None
+        else:
+            assert mock_plotter.initial_vclamp_data is not None
 
-    pulse_plots, exp_plots = mock_plotter.advance(sweep_number)
-    if mock_plotter.data_set.sweep_table['stimulus_code'][sweep_number][-6:] == "Search":
-        assert pulse_plots is None, exp_plots is None
-    elif mock_plotter.data_set.sweep(sweep_number).clamp_mode == "CurrentClamp":
-        assert pulse_plots.full.y_label == "membrane potential (mV)"
-        assert exp_plots.full.y_label == "membrane potential (mV)"
-    elif mock_plotter.data_set.sweep(sweep_number).clamp_mode == "VoltageClamp":
-        assert pulse_plots.full.y_label == "holding current (pA)"
-        assert pulse_plots.full.y_label == "holding current (pA)"
+        if expected_stored_tp['previous_vclamp'] is None:
+            assert mock_plotter.previous_vclamp_data is None
+        else:
+            assert mock_plotter.previous_vclamp_data is not None
+
+        if expected_stored_tp['initial_iclamp'] is None:
+            assert mock_plotter.initial_iclamp_data is None
+        else:
+            assert mock_plotter.initial_iclamp_data is not None
+
+        if expected_stored_tp['previous_iclamp'] is None:
+            assert mock_plotter.previous_iclamp_data is None
+        else:
+            assert mock_plotter.previous_iclamp_data is not None

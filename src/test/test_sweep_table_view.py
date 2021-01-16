@@ -4,7 +4,6 @@ import pytest
 from PyQt5.QtCore import QModelIndex, Qt, QPoint
 
 from main import SweepPage
-from sweep_plotter import SweepPlotConfig
 from sweep_table_model import SweepTableModel
 from sweep_table_view import SweepTableView
 from .conftest import check_mock_called_with, check_mock_not_called
@@ -23,13 +22,8 @@ class MockPlotter:
 @pytest.mark.parametrize("col", list(range(8)))
 def test_plot_popup_click(qtbot, row, col):
 
-    model = SweepTableModel(
-        SweepPage.colnames,
-        SweepPlotConfig(0, 1, 2, 3, 4, 5, 6)
-    )
-    view = SweepTableView(
-        SweepPage.colnames
-    )
+    model = SweepTableModel(SweepPage.colnames)
+    view = SweepTableView(SweepPage.colnames)
 
     view.popup_plot = mock.MagicMock()
 
@@ -82,12 +76,9 @@ def test_filter_sweeps(qtbot, filter_status):
         """
     model = SweepTableModel(
         SweepPage.colnames,
-        SweepPlotConfig(0, 1, 2, 3, 4, 5, 6)
     )
 
-    view = SweepTableView(
-        SweepPage.colnames
-    )
+    view = SweepTableView(SweepPage.colnames)
 
     # mock dictionary of sets defining sweep types
     sweep_types = {
@@ -98,41 +89,13 @@ def test_filter_sweeps(qtbot, filter_status):
             53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
             70, 71, 72
         },
-        'v_clamp': {
-            0, 1, 2, 3, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
-        },
-        'i_clamp': {
-            4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-            22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-            39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
-            56, 57, 58, 59
-        },
         'pipeline': {
             4, 6, 7, 8, 10, 11, 13, 15, 24, 25, 26, 27, 29, 32, 33, 34, 45, 46,
             47, 48, 49, 50, 51, 57, 58, 59
         },
-        'search': {
-            35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 16, 17, 18, 19, 20, 21, 22
-        },
-        'ex_tp': {0, 1, 2, 3, 60},
         'nuc_vc': {
             61, 62, 63, 64, 65, 66, 67, 68, 69, 70
         },
-        'core_one': {
-            4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 24, 25, 26, 27, 28,
-            29, 30, 31, 32, 33, 34, 45, 46, 47, 48, 49, 50, 51
-        },
-        'core_two': {52, 53, 54, 55, 56, 57, 58, 59},
-        'auto_pass': {
-            4, 6, 7, 8, 11, 13, 15, 24, 25, 26, 27, 32, 33, 34, 45, 46, 47, 48,
-            49, 50, 51, 57, 58, 59
-        },
-        'auto_fail': {5, 9, 10, 12, 14, 52, 53, 54, 23, 55, 56, 28, 29, 30, 31},
-        'no_auto_qc': {
-            0, 1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 35, 36, 37, 38, 39, 40, 41,
-            42, 43, 44, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
-        },
-        'unknown': {71,72}
     }
 
     model.sweep_types = sweep_types
@@ -183,9 +146,6 @@ def test_filter_sweeps(qtbot, filter_status):
         assert view.view_pipeline.isChecked()
     if sweep_types['nuc_vc'].issubset(visible_sweeps):
         assert view.view_nuc_vc.isChecked()
-
-    # remove 'Search' sweeps from visible sweeps
-    visible_sweeps = visible_sweeps - sweep_types['search']
 
     # loop through rows and confirm visible sweeps
     for index in range(num_rows):

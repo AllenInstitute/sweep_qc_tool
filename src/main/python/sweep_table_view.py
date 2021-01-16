@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtWidgets import QTableView, QDialog, QGridLayout, QWidget, QAction
+from PyQt5.QtWidgets import QTableView, QWidget, QAction
 from PyQt5.QtCore import QModelIndex
 
 from delegates import SvgDelegate, ComboBoxDelegate
@@ -26,6 +26,8 @@ class SweepTableView(QTableView):
     def __init__(self, colnames):
         super().__init__()
         self.colnames = colnames
+        # A list of active popup plots to show when thumbnails are clicked
+        self.popup_plots = []
 
         self.svg_delegate = SvgDelegate()
         manual_qc_choices = ["default", "failed", "passed"]
@@ -43,19 +45,11 @@ class SweepTableView(QTableView):
 
         # sweep view filter actions
         self.view_all_sweeps = QAction("All sweeps")
-        # current / voltage clamp
-        self.view_v_clamp = QAction("Voltage clamp")
-        self.view_i_clamp = QAction("Current clamp")
-        # stimulus codes
+        # view qc pipeline sweeps
         self.view_pipeline = QAction("QC Pipeline")
-        self.view_ex_tp = QAction("EXTP - Test sweeps")
+        # view channel recording sweeps
         self.view_nuc_vc = QAction("NucVC - Channel recordings")
-        self.view_core_one = QAction("Core 1")
-        self.view_core_two = QAction("Core 2")
-        # qc status
-        self.view_auto_pass = QAction("Auto passed")
-        self.view_auto_fail = QAction("Auto failed")
-        self.view_no_auto_qc = QAction("No auto QC")
+
         # initialize these actions
         self.init_actions()
 
@@ -151,14 +145,22 @@ class SweepTableView(QTableView):
         top : top position at which the popup will be placed (px)
 
         """
+        # add the graph to list of active popup plots
+        self.popup_plots.append(graph)
 
-        popup = QDialog()
-        layout = QGridLayout()
-        
-        layout.addWidget(graph)
-        popup.setLayout(layout)
-        popup.move(left, top)
-        popup.exec()
+        # remove the oldest popup plots if there are more than 5
+        while len(self.popup_plots) > 5:
+            self.popup_plots.pop(0)
+
+        # the great-great-grandparent of this widget should be the main window
+        main_window = self.parent().parent().parent().parent()
+
+        # move popup plot to nice location relative to main window
+        graph.window().move(
+            left + main_window.pos().x(),
+            top + main_window.pos().y()
+        )
+        graph.show()
 
     def filter_sweeps(self):
         """ Filters the table down to sweeps based on the checkboxes that are
@@ -192,9 +194,6 @@ class SweepTableView(QTableView):
         self.view_nuc_vc.setChecked(
             self.model().sweep_types['nuc_vc'].issubset(visible_sweeps)
         )
-
-        # remove 'Search' sweeps from visible sweeps
-        visible_sweeps = visible_sweeps - self.model().sweep_types['search']
 
         # loop through rows of table model and show only visible sweeps
         for index in range(self.model().rowCount()):
